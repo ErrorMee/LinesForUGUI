@@ -111,7 +111,7 @@ Shader "LinesForUGUI"
                     half4 color = IN.color;
                     //return half4(IN.worldPosition.x * 0.01, 0, 0, 1);
                     float sd = sdOrientedBox(IN.custom.zw, IN.abPos.xy, IN.abPos.zw, IN.custom.x) - IN.custom.y;
-                    sd = sdOrientedBox(IN.custom.zw, 0, half2(200,10), IN.custom.x) - IN.custom.y;
+                    sd = sdOrientedBox(IN.custom.zw, 0, half2(200, 10), IN.custom.x) - IN.custom.y;
 
                     color.a *= saturate(-sd);
 
