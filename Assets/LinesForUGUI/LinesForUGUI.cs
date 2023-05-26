@@ -56,7 +56,8 @@ public class LinesForUGUI : Image
         for (int i = 1; i < lineInfo.points.Count - 1; i++)
         {
             pointCrt = lineInfo.points[i];
-            Vector3 dirPreToCrt = (pointCrt.pos - lineInfo.points[i - 1].pos).normalized;
+            PointInfo pointPre = lineInfo.points[i - 1];
+            Vector3 dirPreToCrt = (pointCrt.pos - pointPre.pos).normalized;
             if (dirPreToCrt == Vector3.zero)
             {
                 dirPreToCrt = Vector3.right;
@@ -71,7 +72,15 @@ public class LinesForUGUI : Image
             float cos = dirAverage.x * dirPreToCrt.x + dirAverage.y * dirPreToCrt.y;
             float dCos = Mathf.Min(1.0f / cos, 32);
             wideOffset = dCos * (pointCrt.radius + lineInfo.roundRadius) * wideDir;
-            AddMidRect(toFill, wideOffset, pointCrt, pointNex.pos);
+            
+            if (i == 1)
+            {
+                AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
+            }
+            else
+            {
+                AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
+            }
         }
 
         if (lineInfo.points.Count > 1)
@@ -127,9 +136,8 @@ public class LinesForUGUI : Image
         toFill.AddVert(vertexLeft);
 
         UIVertex vertexRight = vertexRightLast;
-        vertexRight.uv0 = new Vector4(posA.x, posA.y, pointB.pos.x, pointB.pos.y);
+        vertexRight.uv0 = vertexLeft.uv0;
         toFill.AddVert(vertexRight);
-        Debug.LogError("abPos " + vertexLeft.uv0);
         vertexCount += 2;
     }
 
@@ -145,18 +153,18 @@ public class LinesForUGUI : Image
         vertexLeft.color = pointB.color * color;
         // sdOrientedBox: abPos
         vertexLeft.uv0 = new Vector4(posA.x, posA.y, pointB.pos.x, pointB.pos.y);
-        Debug.LogError("abPos2 " + vertexLeft.uv0);
-       
+        // sdOrientedBox: thickness, round, blank
+        vertexLeft.uv1 = new Vector4(pointB.radius * 2, lineCrt.roundRadius, lineCrt.blankStart, lineCrt.blankLen);
 
         vertexLeft.position = midPos + wideOffset;
-        // sdOrientedBox: thickness, round, os
-        vertexLeft.uv1 = new Vector4(pointB.radius * 2, lineCrt.roundRadius, vertexLeft.position.x, vertexLeft.position.y);
+        // os, fadeRadius, travel len
+        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, lineCrt.fadeRadius);
         toFill.AddVert(vertexLeft);
         vertexLeftLast = vertexLeft;
 
         UIVertex vertexRight = vertexLeft;
         vertexRight.position = midPos - wideOffset;
-        vertexRight.uv1 = new Vector4(pointB.radius * 2, lineCrt.roundRadius, vertexRight.position.x, vertexRight.position.y);
+        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, lineCrt.fadeRadius);
         toFill.AddVert(vertexRight);
         vertexRightLast = vertexRight;
 

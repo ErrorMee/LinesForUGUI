@@ -63,7 +63,8 @@ Shader "LinesForUGUI"
                     float4 vertex   : POSITION;
                     float4 color    : COLOR;
                     float4 abPos : TEXCOORD0;
-                    float4 custom : TEXCOORD1;//(x:sdOrientedBox thickness) (y:round) (zw:os)
+                    float4 custom : TEXCOORD1;//(x:Box thickness) (y:round) (z:blank start) (w:blank len) 
+                    float4 custom1 : TEXCOORD2;//(xy:os) (z:fadeRadius) (w:travel len)
                     UNITY_VERTEX_INPUT_INSTANCE_ID
                 };
 
@@ -74,6 +75,7 @@ Shader "LinesForUGUI"
                     float4 abPos  : TEXCOORD0;
                     float4 worldPosition : TEXCOORD1;
                     float4 custom : TEXCOORD2;
+                    float4 custom1 : TEXCOORD3;
                     UNITY_VERTEX_OUTPUT_STEREO
                 };
 
@@ -91,9 +93,17 @@ Shader "LinesForUGUI"
                     OUT.vertex = UnityObjectToClipPos(OUT.worldPosition);
 
                     OUT.abPos = v.abPos;
-                    OUT.custom = v.custom;
                     OUT.color = v.color;
+                    OUT.custom = v.custom;
+                    OUT.custom1 = v.custom1;
                     return OUT;
+                }
+
+                float sdSegment(in float2 p, in float2 a, in float2 b)
+                {
+                    float2 pa = p - a, ba = b - a;
+                    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+                    return length(pa - ba * h);
                 }
 
                 float sdOrientedBox(in float2 p, in float2 a, in float2 b, float th)
@@ -109,19 +119,18 @@ Shader "LinesForUGUI"
                 half4 frag(v2f IN) : SV_Target
                 {
                     half4 color = IN.color;
-                    //return half4(IN.worldPosition.x * 0.01, 0, 0, 1);
-                    float sd = sdOrientedBox(IN.custom.zw, IN.abPos.xy, IN.abPos.zw, IN.custom.x) - IN.custom.y;
-                    sd = sdOrientedBox(IN.custom.zw, 0, half2(200, 10), IN.custom.x) - IN.custom.y;
 
-                    color.a *= saturate(-sd);
+                    float sd = sdOrientedBox(IN.custom1.xy, IN.abPos.xw, IN.abPos.zy, IN.custom.x) - IN.custom.y;
+                    //sd = sdSegment(IN.custom1.xy, 0, float2(200, 0)) - IN.custom.y;
+                    color.a *= saturate(-sd * (1 / IN.custom1.z));
 
-                    /*#ifdef UNITY_UI_CLIP_RECT
+                    #ifdef UNITY_UI_CLIP_RECT
                     color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
                     #endif
 
                     #ifdef UNITY_UI_ALPHACLIP
                     clip(color.a - 0.001);
-                    #endif*/
+                    #endif
 
                     return color;
                 }
