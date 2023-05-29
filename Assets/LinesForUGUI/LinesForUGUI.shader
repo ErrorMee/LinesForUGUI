@@ -109,8 +109,8 @@ Shader "LinesForUGUI"
                 float sdOrientedBox(in float2 p, in float2 a, in float2 b, float th)
                 {
                     float l = length(b - a);
-                    float2  d = (b - a) / l;
-                    float2  q = (p - (a + b) * 0.5);
+                    float2 d = (b - a) / l;
+                    float2 q = (p - (a + b) * 0.5);
                     q = mul(float2x2(d.x, -d.y, d.y, d.x), q);
                     q = abs(q) - float2(l, th) * 0.5;
                     return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
@@ -119,9 +119,29 @@ Shader "LinesForUGUI"
                 half4 frag(v2f IN) : SV_Target
                 {
                     half4 color = IN.color;
+                    float round = IN.custom.y;
 
-                    float sd = sdOrientedBox(IN.custom1.xy, IN.abPos.xw, IN.abPos.zy, IN.custom.x) - IN.custom.y;
-                    //sd = sdSegment(IN.custom1.xy, 0, float2(200, 0)) - IN.custom.y;
+                    float sdGlobal = sdOrientedBox(IN.custom1.xy, IN.abPos.xw, IN.abPos.zy, IN.custom.x) - round;
+
+
+                    float travelLen = IN.custom1.w; //return half4(travelLen / 1000, 0, 0, 1);
+                    float2 lineDir = normalize(IN.abPos.zw - IN.abPos.xy);
+                    float round2 = round * 2;
+                    float solidLen = IN.custom.z; float blankLen = IN.custom.w;
+                    float blockLen = solidLen + blankLen + round2;
+                    int blockIndex = floor(travelLen / blockLen);
+
+                    float4 abPos;
+                    abPos.xy = IN.abPos.xy + lineDir * blockLen * blockIndex;//???
+                    //abPos.xy = IN.abPos.xy + lineDir * blockLen * 1;
+                    abPos.zw = abPos.xy + lineDir * solidLen;
+                    //float sdLocal = sdOrientedBox(IN.custom1.xy, abPos.xw, abPos.zy, IN.custom.x) - round;
+                    float sdLocal = sdSegment(IN.custom1.xy, abPos.xy, abPos.zw) - round;
+
+                    sdLocal -= step(IN.custom.w, 0) * 512;
+                    
+                    float sd = max(sdLocal, sdGlobal);
+                    
                     color.a *= saturate(-sd * (1 / IN.custom1.z));
 
                     #ifdef UNITY_UI_CLIP_RECT
@@ -131,7 +151,7 @@ Shader "LinesForUGUI"
                     #ifdef UNITY_UI_ALPHACLIP
                     clip(color.a - 0.001);
                     #endif
-
+                    
                     return color;
                 }
             ENDCG

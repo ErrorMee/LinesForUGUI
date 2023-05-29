@@ -10,10 +10,9 @@ public class LinesForUGUI : Image
 {
     [SerializeField] List<LineInfo> lines;
 
-    int vertexCount = 0;
-    UIVertex vertexLeftLast;
-    UIVertex vertexRightLast;
-    LineInfo lineCrt;
+    int vertexCount = 0; LineInfo lineCrt;
+    UIVertex vertexLastLeft; UIVertex vertexLastRight;
+    float travelLenLeft = 0; float travelLenRight = 0;
 
     public void Draw(List<LineInfo> lines)
     {
@@ -36,7 +35,7 @@ public class LinesForUGUI : Image
         {
             return;
         }
-        lineCrt = lineInfo;
+        lineCrt = lineInfo; travelLenLeft = travelLenRight = 0;
 
         PointInfo pointCrt = lineInfo.points[0];
         Vector3 dirCrtToNex = Vector3.right;
@@ -72,15 +71,8 @@ public class LinesForUGUI : Image
             float cos = dirAverage.x * dirPreToCrt.x + dirAverage.y * dirPreToCrt.y;
             float dCos = Mathf.Min(1.0f / cos, 32);
             wideOffset = dCos * (pointCrt.radius + lineInfo.roundRadius) * wideDir;
-            
-            if (i == 1)
-            {
-                AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
-            }
-            else
-            {
-                AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
-            }
+
+            AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
         }
 
         if (lineInfo.points.Count > 1)
@@ -108,36 +100,74 @@ public class LinesForUGUI : Image
         }
     }
 
-    private void AddStartRect(VertexHelper toFill, Vector3 posB, Vector3 wideOffset, PointInfo pointB, Vector3 posA)
+    private void AddStartRect(VertexHelper toFill, Vector3 posFrom, Vector3 wideOffset, PointInfo pointCrt, Vector3 posTo)
     {
-        AddTwoVert(toFill, posB, wideOffset, pointB, posA);
-        AddTwoVert(toFill, pointB.pos, wideOffset, pointB, posA);
+        vertexLastLeft = UIVertex.simpleVert;
+        vertexLastLeft.position = posFrom + wideOffset;
+        vertexLastRight = UIVertex.simpleVert;
+        vertexLastRight.position = posFrom - wideOffset;
+
+        NewTwoVert(toFill, posFrom, wideOffset, pointCrt, pointCrt.pos, posTo);
+        NewTwoVert(toFill, pointCrt.pos, wideOffset, pointCrt, pointCrt.pos, posTo);
         AddTwoTriangle(toFill);
     }
 
     private void AddMidRect(VertexHelper toFill, Vector3 wideOffset, PointInfo pointB, Vector3 posA)
     {
         ReuseTwoVert(toFill, pointB, posA);
-        AddTwoVert(toFill, pointB.pos, wideOffset, pointB, posA);
+        NewTwoVert(toFill, pointB.pos, wideOffset, pointB, posA, pointB.pos);
         AddTwoTriangle(toFill);
     }
 
     private void AddEndRect(VertexHelper toFill, Vector3 posB, Vector3 wideOffset, PointInfo pointB, Vector3 posA)
     {
         ReuseTwoVert(toFill, pointB, posA);
-        AddTwoVert(toFill, posB, wideOffset, pointB, posA);
+        NewTwoVert(toFill, posB, wideOffset, pointB, posA, pointB.pos);
         AddTwoTriangle(toFill);
     }
 
     private void ReuseTwoVert(VertexHelper toFill, PointInfo pointB, Vector3 posA)
     {
-        UIVertex vertexLeft = vertexLeftLast;
+        travelLenLeft = travelLenRight * 2 - travelLenLeft;
+        vertexLastLeft.uv2.w = travelLenLeft;  
+
+        UIVertex vertexLeft = vertexLastLeft;
         vertexLeft.uv0 = new Vector4(posA.x, posA.y, pointB.pos.x, pointB.pos.y);
         toFill.AddVert(vertexLeft);
-
-        UIVertex vertexRight = vertexRightLast;
+        Debug.LogError(" ab " + vertexLeft.uv0 + " dis " + vertexLeft.uv2.w + " --- Reuse vertexLeft ");
+        UIVertex vertexRight = vertexLastRight;
         vertexRight.uv0 = vertexLeft.uv0;
         toFill.AddVert(vertexRight);
+        Debug.LogError(" ab " + vertexRight.uv0 + " dis " + vertexRight.uv2.w + " --- Reuse vertexRight ");
+        vertexCount += 2;
+    }
+
+    private void NewTwoVert(VertexHelper toFill, Vector3 midPos, Vector3 wideOffset, 
+        PointInfo pointCrt, Vector3 posA, Vector3 posB)
+    {
+        UIVertex vertexLeft = UIVertex.simpleVert;
+        vertexLeft.color = pointCrt.color * color;
+        // sdOrientedBox: abPos
+        vertexLeft.uv0 = new Vector4(posA.x, posA.y, posB.x, posB.y);
+        // sdOrientedBox: thickness, round, blank
+        vertexLeft.uv1 = new Vector4(pointCrt.radius * 2, lineCrt.roundRadius, lineCrt.blankStart, lineCrt.blankLen);
+
+        vertexLeft.position = midPos + wideOffset;
+        // os, fadeRadius, travel len
+        travelLenLeft += (vertexLeft.position - vertexLastLeft.position).magnitude;
+        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, lineCrt.fadeRadius, travelLenLeft);
+        toFill.AddVert(vertexLeft);
+        Debug.LogError(" ab " + vertexLeft.uv0 + " dis " + vertexLeft.uv2.w + " +++ New vertexLeft ");
+        vertexLastLeft = vertexLeft;
+
+        UIVertex vertexRight = vertexLeft;
+        vertexRight.position = midPos - wideOffset;
+        travelLenRight += (vertexRight.position - vertexLastRight.position).magnitude;
+        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, lineCrt.fadeRadius, travelLenRight);
+        toFill.AddVert(vertexRight);
+        Debug.LogError(" ab " + vertexRight.uv0 + " dis " + vertexRight.uv2.w + " +++ New vertexRight ");
+        vertexLastRight = vertexRight;
+
         vertexCount += 2;
     }
 
@@ -145,30 +175,6 @@ public class LinesForUGUI : Image
     {
         toFill.AddTriangle(vertexCount - 4, vertexCount - 2, vertexCount - 3);
         toFill.AddTriangle(vertexCount - 2, vertexCount - 1, vertexCount - 3);
-    }
-
-    private void AddTwoVert(VertexHelper toFill, Vector3 midPos, Vector3 wideOffset, PointInfo pointB, Vector3 posA)
-    {
-        UIVertex vertexLeft = UIVertex.simpleVert;
-        vertexLeft.color = pointB.color * color;
-        // sdOrientedBox: abPos
-        vertexLeft.uv0 = new Vector4(posA.x, posA.y, pointB.pos.x, pointB.pos.y);
-        // sdOrientedBox: thickness, round, blank
-        vertexLeft.uv1 = new Vector4(pointB.radius * 2, lineCrt.roundRadius, lineCrt.blankStart, lineCrt.blankLen);
-
-        vertexLeft.position = midPos + wideOffset;
-        // os, fadeRadius, travel len
-        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, lineCrt.fadeRadius);
-        toFill.AddVert(vertexLeft);
-        vertexLeftLast = vertexLeft;
-
-        UIVertex vertexRight = vertexLeft;
-        vertexRight.position = midPos - wideOffset;
-        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, lineCrt.fadeRadius);
-        toFill.AddVert(vertexRight);
-        vertexRightLast = vertexRight;
-
-        vertexCount += 2;
     }
 }
 
