@@ -132,13 +132,13 @@ Shader "LinesForUGUI"
                     int blockIndex = floor(travelLen / blockLen);
 
                     float4 abPos;
-                    abPos.xy = IN.abPos.xy + lineDir * blockLen * blockIndex;//???
+                    abPos.xy = IN.abPos.xy + lineDir * blockLen * blockIndex;//IN.abPos.xy ???
                     //abPos.xy = IN.abPos.xy + lineDir * blockLen * 1;
                     abPos.zw = abPos.xy + lineDir * solidLen;
-                    //float sdLocal = sdOrientedBox(IN.custom1.xy, abPos.xw, abPos.zy, IN.custom.x) - round;
-                    float sdLocal = sdSegment(IN.custom1.xy, abPos.xy, abPos.zw) - round;
+                    float sdLocal = sdOrientedBox(IN.custom1.xy, abPos.xw, abPos.zy, IN.custom.x) - round;
+                    //float sdLocal = sdSegment(IN.custom1.xy, abPos.xy, abPos.zw) - round;
 
-                    sdLocal -= step(IN.custom.w, 0) * 512;
+                    sdLocal -= step(IN.custom.w, 0) * 1024;
                     
                     float sd = max(sdLocal, sdGlobal);
                     

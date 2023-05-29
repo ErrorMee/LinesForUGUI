@@ -129,7 +129,7 @@ public class LinesForUGUI : Image
     private void ReuseTwoVert(VertexHelper toFill, PointInfo pointB, Vector3 posA)
     {
         travelLenLeft = travelLenRight * 2 - travelLenLeft;
-        vertexLastLeft.uv2.w = travelLenLeft;  
+        vertexLastLeft.uv2.w = travelLenLeft;
 
         UIVertex vertexLeft = vertexLastLeft;
         vertexLeft.uv0 = new Vector4(posA.x, posA.y, pointB.pos.x, pointB.pos.y);
