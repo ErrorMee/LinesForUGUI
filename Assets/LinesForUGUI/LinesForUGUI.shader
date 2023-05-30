@@ -64,7 +64,7 @@ Shader "LinesForUGUI"
                     float4 color    : COLOR;
                     float4 abPos : TEXCOORD0;
                     float4 custom : TEXCOORD1;//(x:Box thickness) (y:round) (z:blank start) (w:blank len) 
-                    float4 custom1 : TEXCOORD2;//(xy:os) (z:fadeRadius) (w:travel len)
+                    float4 custom1 : TEXCOORD2;//(xy:os) (z:fadeRadius) (w:offsetStart)
                     UNITY_VERTEX_INPUT_INSTANCE_ID
                 };
 
@@ -99,13 +99,6 @@ Shader "LinesForUGUI"
                     return OUT;
                 }
 
-                float sdSegment(in float2 p, in float2 a, in float2 b)
-                {
-                    float2 pa = p - a, ba = b - a;
-                    float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-                    return length(pa - ba * h);
-                }
-
                 float sdOrientedBox(in float2 p, in float2 a, in float2 b, float th)
                 {
                     float l = length(b - a);
@@ -118,29 +111,28 @@ Shader "LinesForUGUI"
 
                 half4 frag(v2f IN) : SV_Target
                 {
-                    half4 color = IN.color;
                     float round = IN.custom.y;
-
                     float sdGlobal = sdOrientedBox(IN.custom1.xy, IN.abPos.xw, IN.abPos.zy, IN.custom.x) - round;
 
 
-                    float travelLen = IN.custom1.w;
-                    float2 lineDir = normalize(IN.abPos.zw - IN.abPos.xy);
+                    float offsetStart = IN.custom1.w + round;
+                    float2 a2bDir = normalize(IN.abPos.zw - IN.abPos.xy);
                     float round2 = round * 2;
                     float solidLen = IN.custom.z; float blankLen = IN.custom.w;
                     float blockLen = solidLen + blankLen + round2;
-                    int blockIndex = floor(travelLen / blockLen);
+                    int blockIndex = floor(offsetStart / blockLen);
 
                     float4 abPos;
-                    abPos.xy = IN.abPos.xy + lineDir * blockLen * blockIndex;//IN.abPos.xy ??? blockIndex
-                    abPos.zw = abPos.xy + lineDir * solidLen;
+                    float2 aOriPos = IN.abPos.xy + a2bDir * blockLen * blockIndex;
+                    abPos.xy = aOriPos;//IN.abPos.xy ??? blockIndex
+                    abPos.zw = aOriPos + a2bDir * solidLen;
                     float sdLocal = sdOrientedBox(IN.custom1.xy, abPos.xw, abPos.zy, IN.custom.x) - round;
-                    //float sdLocal = sdSegment(IN.custom1.xy, abPos.xy, abPos.zw) - round;
 
                     sdLocal -= step(IN.custom.w, 0) * 1024;
                     
                     float sd = max(sdLocal, sdGlobal);
-                    
+                    sd = sdLocal;
+                    half4 color = IN.color;
                     color.a *= saturate(-sd * (1 / IN.custom1.z));
 
                     #ifdef UNITY_UI_CLIP_RECT

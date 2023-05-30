@@ -12,7 +12,6 @@ public class LinesForUGUI : Image
 
     int vertexCount = 0; LineInfo lineCrt;
     UIVertex vertexLastLeft; UIVertex vertexLastRight;
-    float travelLenLeft = 0; float travelLenRight = 0;
 
     public void Draw(List<LineInfo> lines)
     {
@@ -29,57 +28,86 @@ public class LinesForUGUI : Image
         }
     }
 
+    private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)
+    {
+        Vector3 pointDir = (fromPos - toPos).normalized;
+        if (pointDir == Vector3.zero)
+        {
+            pointDir = Vector3.right;
+        }
+        return pointDir;
+    }
+
+    private void AddTwoHeadVert(VertexHelper toFill, PointInfo ctrPoint)
+    {
+        Vector3 pointDir = Vector3.left;
+        if (lineCrt.points.Count > 1)
+        {
+            pointDir = PointDir(lineCrt.points[1].pos, ctrPoint.pos);
+        }
+        Vector3 wideDir = new(-pointDir.y, pointDir.x, 0);
+        Vector3 wideOffset = wideDir * (ctrPoint.radius + lineCrt.roundRadius);
+        Vector3 posOffset = lineCrt.roundRadius * pointDir;
+
+        UIVertex vertexLeft = UIVertex.simpleVert;
+        vertexLeft.position = ctrPoint.pos + posOffset + wideOffset;
+        vertexLeft.color = ctrPoint.color * color;
+        // ctrPos fadeRadius
+        vertexLeft.uv0 = new Vector4(ctrPoint.pos.x, ctrPoint.pos.y, lineCrt.fadeRadius);
+        // sdOrientedBox: thickness, round, blank
+        vertexLeft.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.roundRadius, lineCrt.blankStart, lineCrt.blankLen);
+        // os
+        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y);
+        toFill.AddVert(vertexLeft);
+        vertexLastLeft = vertexLeft;
+
+        UIVertex vertexRight = vertexLeft;
+        vertexRight.position = ctrPoint.pos + posOffset - wideOffset;
+        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y);
+        toFill.AddVert(vertexRight);
+        vertexLastRight = vertexRight;
+    }
+
     private void Draw(VertexHelper toFill, LineInfo lineInfo)
     {
         if (lineInfo.points.Count < 1)
         {
             return;
         }
-        lineCrt = lineInfo; travelLenLeft = travelLenRight = 0;
+        lineCrt = lineInfo; 
 
-        PointInfo pointCrt = lineInfo.points[0];
-        Vector3 dirCrtToNex = Vector3.right;
-        if (lineInfo.points.Count > 1)
-        {
-            dirCrtToNex = (lineInfo.points[1].pos - pointCrt.pos).normalized;
-            if (dirCrtToNex == Vector3.zero)
-            {
-                dirCrtToNex = Vector3.right;
-            }
-        }
-        Vector3 wideDir = new(-dirCrtToNex.y, dirCrtToNex.x, 0);
-        Vector3 wideOffset = wideDir * (pointCrt.radius + lineInfo.roundRadius);
-        Vector3 roundOffset = lineInfo.roundRadius * dirCrtToNex;
-        AddStartRect(toFill, pointCrt.pos - roundOffset, wideOffset, pointCrt, pointCrt.pos + roundOffset);
+        PointInfo ctrPoint = lineInfo.points[0];
+        AddTwoHeadVert(toFill, ctrPoint);
+
 
         for (int i = 1; i < lineInfo.points.Count - 1; i++)
         {
-            pointCrt = lineInfo.points[i];
+            ctrPoint = lineInfo.points[i];
             PointInfo pointPre = lineInfo.points[i - 1];
-            Vector3 dirPreToCrt = (pointCrt.pos - pointPre.pos).normalized;
+            Vector3 dirPreToCrt = (ctrPoint.pos - pointPre.pos).normalized;
             if (dirPreToCrt == Vector3.zero)
             {
                 dirPreToCrt = Vector3.right;
             }
             PointInfo pointNex = lineInfo.points[i + 1];
-            dirCrtToNex = (pointNex.pos - pointCrt.pos).normalized;
+            pointDir = (pointNex.pos - ctrPoint.pos).normalized;
 
-            Vector3 dirAverage = (dirPreToCrt + dirCrtToNex) * 0.5f;
+            Vector3 dirAverage = (dirPreToCrt + pointDir) * 0.5f;
 
             wideDir = new(-dirAverage.y, dirAverage.x, 0);
 
             float cos = dirAverage.x * dirPreToCrt.x + dirAverage.y * dirPreToCrt.y;
-            float dCos = Mathf.Min(1.0f / cos, 32);
-            wideOffset = dCos * (pointCrt.radius + lineInfo.roundRadius) * wideDir;
+            float dCos = Mathf.Min(1.0f / cos, 99999);
+            wideOffset = dCos * (ctrPoint.radius + lineInfo.roundRadius) * wideDir;
 
-            AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
+            AddMidRect(toFill, wideOffset, ctrPoint, pointPre.pos);
         }
 
         if (lineInfo.points.Count > 1)
         {
-            pointCrt = lineInfo.points[^1];
+            ctrPoint = lineInfo.points[^1];
             PointInfo pointPre = lineInfo.points[^2];
-            Vector3 dirPreToCrt = (pointCrt.pos - pointPre.pos).normalized;
+            Vector3 dirPreToCrt = (ctrPoint.pos - pointPre.pos).normalized;
 
             if (dirPreToCrt == Vector3.zero)
             {
@@ -87,16 +115,16 @@ public class LinesForUGUI : Image
             }
 
             wideDir = new(-dirPreToCrt.y, dirPreToCrt.x, 0);
-            wideOffset = wideDir * (pointCrt.radius + lineInfo.roundRadius);
-            AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
-            AddEndRect(toFill, pointCrt.pos + lineInfo.roundRadius * dirPreToCrt, wideOffset, pointCrt, pointPre.pos);
+            wideOffset = wideDir * (ctrPoint.radius + lineInfo.roundRadius);
+            AddMidRect(toFill, wideOffset, ctrPoint, pointPre.pos);
+            //AddEndRect(toFill, pointCrt.pos + lineInfo.roundRadius * dirPreToCrt, wideOffset, pointCrt, pointPre.pos);
         }
         else
         {
-            wideOffset = Vector3.up * (pointCrt.radius + lineInfo.roundRadius);
-            roundOffset = lineInfo.roundRadius * lineInfo.roundRadius * Vector3.right;
+            wideOffset = Vector3.up * (ctrPoint.radius + lineInfo.roundRadius);
+            posOffset = lineInfo.roundRadius * lineInfo.roundRadius * Vector3.right;
             PointInfo pointPre = lineInfo.points[0];
-            AddEndRect(toFill, pointPre.pos + roundOffset, wideOffset, pointCrt, pointPre.pos - roundOffset);
+            AddEndRect(toFill, pointPre.pos + posOffset, wideOffset, ctrPoint, pointPre.pos - posOffset);
         }
     }
 
@@ -128,17 +156,14 @@ public class LinesForUGUI : Image
 
     private void ReuseTwoVert(VertexHelper toFill, PointInfo pointB, Vector3 posA)
     {
-        travelLenLeft = travelLenRight * 2 - travelLenLeft;
-        vertexLastLeft.uv2.w = travelLenLeft;
-
         UIVertex vertexLeft = vertexLastLeft;
         vertexLeft.uv0 = new Vector4(posA.x, posA.y, pointB.pos.x, pointB.pos.y);
         toFill.AddVert(vertexLeft);
-        Debug.LogError(" ab " + vertexLeft.uv0 + " dis " + vertexLeft.uv2.w + " --- Reuse vertexLeft ");
+        Debug.LogError(" offsetStart: " + vertexLeft.uv2.w + "  --- L");
         UIVertex vertexRight = vertexLastRight;
         vertexRight.uv0 = vertexLeft.uv0;
         toFill.AddVert(vertexRight);
-        Debug.LogError(" ab " + vertexRight.uv0 + " dis " + vertexRight.uv2.w + " --- Reuse vertexRight ");
+        Debug.LogError(" offsetStart: " + vertexRight.uv2.w + "  --- R");
         vertexCount += 2;
     }
 
@@ -153,19 +178,17 @@ public class LinesForUGUI : Image
         vertexLeft.uv1 = new Vector4(pointCrt.radius * 2, lineCrt.roundRadius, lineCrt.blankStart, lineCrt.blankLen);
 
         vertexLeft.position = midPos + wideOffset;
-        // os, fadeRadius, travel len
-        travelLenLeft += (vertexLeft.position - vertexLastLeft.position).magnitude;
-        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, lineCrt.fadeRadius, travelLenLeft);
+        // os, fadeRadius, offsetStart0
+        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, lineCrt.fadeRadius, 0);
         toFill.AddVert(vertexLeft);
-        Debug.LogError(" ab " + vertexLeft.uv0 + " dis " + vertexLeft.uv2.w + " +++ New vertexLeft ");
+        Debug.LogError(" offsetStart: " + vertexLeft.uv2.w + "  +++ L");
         vertexLastLeft = vertexLeft;
 
         UIVertex vertexRight = vertexLeft;
         vertexRight.position = midPos - wideOffset;
-        travelLenRight += (vertexRight.position - vertexLastRight.position).magnitude;
-        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, lineCrt.fadeRadius, travelLenRight);
+        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, lineCrt.fadeRadius, 0);
         toFill.AddVert(vertexRight);
-        Debug.LogError(" ab " + vertexRight.uv0 + " dis " + vertexRight.uv2.w + " +++ New vertexRight ");
+        Debug.LogError(" offsetStart: " + vertexRight.uv2.w + "  +++ R");
         vertexLastRight = vertexRight;
 
         vertexCount += 2;
