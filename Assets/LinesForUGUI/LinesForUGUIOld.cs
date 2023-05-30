@@ -89,7 +89,7 @@ public class LinesForUGUIOld : Image
             wideDir = new(-dirPreToCrt.y, dirPreToCrt.x, 0);
             wideOffset = wideDir * (pointCrt.radius + lineInfo.roundRadius);
             AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
-            //AddEndRect(toFill, pointCrt.pos + lineInfo.roundRadius * dirPreToCrt, wideOffset, pointCrt, pointPre.pos);
+            AddEndRect(toFill, pointCrt.pos + lineInfo.roundRadius * dirPreToCrt, wideOffset, pointCrt, pointPre.pos);
         }
         else
         {

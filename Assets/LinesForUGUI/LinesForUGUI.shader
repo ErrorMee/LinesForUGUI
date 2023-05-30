@@ -111,6 +111,7 @@ Shader "LinesForUGUI"
 
                 half4 frag(v2f IN) : SV_Target
                 {
+                    return 1;
                     float round = IN.custom.y;
                     float sdGlobal = sdOrientedBox(IN.custom1.xy, IN.abPos.xw, IN.abPos.zy, IN.custom.x) - round;
 
