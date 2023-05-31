@@ -1,6 +1,6 @@
 // Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
-Shader "LinesForUGUI"
+Shader "LinesForUGUI1"
 {
     Properties
     {
@@ -62,9 +62,9 @@ Shader "LinesForUGUI"
             {
                 float4 vertex   : POSITION;
                 float4 color    : COLOR;
-                float4 custom0 : TEXCOORD0;//abPos
-                float4 custom1 : TEXCOORD1;//radius, blankStart, blankLen
-                float4 custom2 : TEXCOORD2;//os(xy), lineDis
+                float4 custom0 : TEXCOORD0;//ctrPos(xy) fadeRadius(z)
+                float4 custom1 : TEXCOORD1;//radius, blankStart, blankLen, lineDis
+                float4 custom2 : TEXCOORD2;//os(xy)
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -91,29 +91,29 @@ Shader "LinesForUGUI"
                 OUT.vertex = UnityObjectToClipPos(OUT.worldPosition);
                 OUT.color = v.color;
 
-                OUT.custom0 = v.custom0;//abPos
-                OUT.custom1 = v.custom1;//radius, blankStart, blankLen
-                OUT.custom2 = v.custom2;//os(xy), lineDis
+                OUT.custom0 = v.custom0;//circleCenter(xy) fadeRadius(z)
+                OUT.custom1 = v.custom1;//radius, blankStart, blankLen, lineDis
+                OUT.custom2 = v.custom2;//os(xy)
                 return OUT;
             }
 
             half4 frag(v2f IN) : SV_Target
             {
-                float sd = length(IN.custom2.xy - IN.custom0.xy) - IN.custom1.x;
+                float2 sdfPos = IN.custom2.xy;
+                float2 circleCenter = IN.custom0.xy;
 
-                float lineDis = IN.custom2.z;
+                float sd = length(sdfPos - circleCenter) - IN.custom1.x;
 
-                float cycleMax = IN.custom1.y + IN.custom1.z;
-                float cycleDis = fmod(lineDis, cycleMax);
-                
-                sd = step(cycleDis, IN.custom1.y);
-                
-
+                /*float blankStart = IN.custom1.y;
+                float blankLen = IN.custom1.z;
+                float lineDis = IN.custom1.w;
+                float cycleLen = fmod(lineDis, blankStart + blankLen);
+                float blank = step(blankStart, cycleLen);
+                sd += blank * 999;*/
+                    
                 half4 color = IN.color;
-                float fade = saturate(-sd);
+                float fade = saturate(-sd * (1 / IN.custom0.z));
                 fade *= fade; fade *= fade;
-
-                fade = step(cycleDis, IN.custom1.y);
                 color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT
