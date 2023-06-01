@@ -284,18 +284,18 @@ MonoBehaviour:
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
   lines:
-  - fadeRadius: 4
+  - fadeRadius: 5
     roundRadius: 10
     blankStart: 40
     blankLen: 40
     points:
-    - pos: {x: -100, y: 0, z: 0}
+    - pos: {x: -200, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       radius: 5
     - pos: {x: 0, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       radius: 5
-    - pos: {x: 100, y: 0, z: 0}
+    - pos: {x: 200, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       radius: 5
 --- !u!222 &1114397286

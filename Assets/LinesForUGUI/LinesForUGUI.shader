@@ -130,8 +130,22 @@ Shader "LinesForUGUI"
                 float2 os = IN.custom2.xy;
                 float fadeRadius = IN.custom2.w;
 
-                float sd = sdOrientedBox(os, abPos.xw, abPos.zy, thickness) - roundRadius;
-                sd = opSubtraction(opUnion(sdCircle(os - abPos.xy, 3), sdCircle(os - abPos.zw, 3)), sd);
+                float sdGlobal = sdOrientedBox(os, abPos.xw, abPos.zy, thickness) - roundRadius;
+
+                float2 a2bDir = normalize(abPos.zw - abPos.xy);
+                float solidLen = IN.custom1.y; float blankLen = IN.custom1.z;
+                float blockLen = solidLen + blankLen;
+                float lineDis = IN.custom2.z;
+                int blockIndex = floor(lineDis / blockLen);
+                //return half4((blockIndex + 1) / 3.0, 0, 0, 1);
+
+                float4 abPosBlock;
+                abPosBlock.xy = abPos.xy + blockIndex * blockLen * a2bDir;
+                abPosBlock.zw = abPosBlock.xy + a2bDir * solidLen;
+                float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
+
+                float sd = sdLocal;//sdGlobal;
+    
                 half4 color = IN.color;
                 float fade = saturate(-sd * (1 / fadeRadius));
                 fade *= fade; fade *= fade;
