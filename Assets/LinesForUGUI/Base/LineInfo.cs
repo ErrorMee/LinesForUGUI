@@ -6,7 +6,7 @@ public class LineInfo
 {
     public float fadeRadius = 0;
 
-    public float radius = 0;
+    public float roundRadius = 0;
 
     public float blankStart = 0;
 

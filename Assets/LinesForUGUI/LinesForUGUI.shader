@@ -63,8 +63,8 @@ Shader "LinesForUGUI"
                 float4 vertex   : POSITION;
                 float4 color    : COLOR;
                 float4 custom0 : TEXCOORD0;//abPos
-                float4 custom1 : TEXCOORD1;//radius, blankStart, blankLen
-                float4 custom2 : TEXCOORD2;//os(xy), lineDis
+                float4 custom1 : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
+                float4 custom2 : TEXCOORD2;//os(xy), lineDis, fadeRadius
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -92,28 +92,50 @@ Shader "LinesForUGUI"
                 OUT.color = v.color;
 
                 OUT.custom0 = v.custom0;//abPos
-                OUT.custom1 = v.custom1;//radius, blankStart, blankLen
-                OUT.custom2 = v.custom2;//os(xy), lineDis
+                OUT.custom1 = v.custom1;//thickness, blankStart, blankLen, roundRadius
+                OUT.custom2 = v.custom2;//os(xy), lineDis, fadeRadius
                 return OUT;
+            }
+
+            float opUnion(float d1, float d2) { return min(d1, d2); }
+            float opSubtraction(float d1, float d2) { return max(-d1, d2); }
+
+            float sdCircle(float2 p, float r)
+            {
+                return length(p) - r;
+            }
+
+            float sdSegment(in float2 p, in float2 a, in float2 b, float round = 0)
+            {
+                float2 pa = p - a, ba = b - a;
+                float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+                return length(pa - ba * h) - round;
+            }
+
+            float sdOrientedBox(in float2 p, in float2 a, in float2 b, float thickness)
+            {
+                float l = length(b - a);
+                float2 d = (b - a) / l;
+                float2 q = (p - (a + b) * 0.5);
+                q = mul(float2x2(d.x, -d.y, d.y, d.x), q);
+                q = abs(q) - float2(l, thickness) * 0.5;
+                return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
             }
 
             half4 frag(v2f IN) : SV_Target
             {
-                float sd = length(IN.custom2.xy - IN.custom0.xy) - IN.custom1.x;
+                float4 abPos = IN.custom0;
+                float thickness = IN.custom1.x;
+                float roundRadius = IN.custom1.w;
+                float2 os = IN.custom2.xy;
+                float fadeRadius = IN.custom2.w;
 
-                float lineDis = IN.custom2.z;
-
-                float cycleMax = IN.custom1.y + IN.custom1.z;
-                float cycleDis = fmod(lineDis, cycleMax);
-                
-                sd = step(cycleDis, IN.custom1.y);
-                
+                float sd = sdOrientedBox(os, abPos.xw, abPos.zy, thickness) - roundRadius;
+                sd = opSubtraction(opUnion(sdCircle(os - abPos.xy, 2), sdCircle(os - abPos.zw, 2)), sd);
 
                 half4 color = IN.color;
-                float fade = saturate(-sd);
+                float fade = saturate(-sd * (1 / fadeRadius));
                 fade *= fade; fade *= fade;
-
-                fade = step(cycleDis, IN.custom1.y);
                 color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT

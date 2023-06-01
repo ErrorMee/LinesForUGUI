@@ -87,7 +87,7 @@ public class LinesForUGUI1 : Image
 
     private void AddTwoVert(VertexHelper toFill, PointInfo ctrPoint, Vector3 pointDir, Vector3 wideDir)
     {
-        float radius = ctrPoint.radius + lineCrt.radius;
+        float radius = ctrPoint.radius + lineCrt.roundRadius;
         Vector3 wideOffset = wideDir * radius;
         Vector3 posOffset = pointDir * radius;
 
@@ -122,7 +122,7 @@ public class LinesForUGUI1 : Image
 
         float cos = dirAverage.x * dirPreToCrt.x + dirAverage.y * dirPreToCrt.y;
         float zoom = Mathf.Min(1.0f / cos, 99999);
-        float radius = lineCrt.radius + ctrPoint.radius;
+        float radius = lineCrt.roundRadius + ctrPoint.radius;
         Vector3 wideOffset = zoom * radius * wideDir;
 
         UIVertex vertexLeft = UIVertex.simpleVert;

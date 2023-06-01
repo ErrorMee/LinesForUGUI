@@ -35,7 +35,7 @@ public class LinesForUGUIOld : Image
         {
             return;
         }
-        lineCrt = lineInfo; offsetStartLeft = offsetStartRight = - lineCrt.radius;
+        lineCrt = lineInfo; offsetStartLeft = offsetStartRight = - lineCrt.roundRadius;
 
         PointInfo pointCrt = lineInfo.points[0];
         Vector3 dirCrtToNex = Vector3.right;
@@ -48,8 +48,8 @@ public class LinesForUGUIOld : Image
             }
         }
         Vector3 wideDir = new(-dirCrtToNex.y, dirCrtToNex.x, 0);
-        Vector3 wideOffset = wideDir * (pointCrt.radius + lineInfo.radius);
-        Vector3 roundOffset = lineInfo.radius * dirCrtToNex;
+        Vector3 wideOffset = wideDir * (pointCrt.radius + lineInfo.roundRadius);
+        Vector3 roundOffset = lineInfo.roundRadius * dirCrtToNex;
         AddStartRect(toFill, pointCrt.pos - roundOffset, wideOffset, pointCrt, pointCrt.pos + roundOffset);
 
         for (int i = 1; i < lineInfo.points.Count - 1; i++)
@@ -70,7 +70,7 @@ public class LinesForUGUIOld : Image
 
             float cos = dirAverage.x * dirPreToCrt.x + dirAverage.y * dirPreToCrt.y;
             float dCos = Mathf.Min(1.0f / cos, 99999);
-            wideOffset = dCos * (pointCrt.radius + lineInfo.radius) * wideDir;
+            wideOffset = dCos * (pointCrt.radius + lineInfo.roundRadius) * wideDir;
 
             AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
         }
@@ -87,14 +87,14 @@ public class LinesForUGUIOld : Image
             }
 
             wideDir = new(-dirPreToCrt.y, dirPreToCrt.x, 0);
-            wideOffset = wideDir * (pointCrt.radius + lineInfo.radius);
+            wideOffset = wideDir * (pointCrt.radius + lineInfo.roundRadius);
             AddMidRect(toFill, wideOffset, pointCrt, pointPre.pos);
-            AddEndRect(toFill, pointCrt.pos + lineInfo.radius * dirPreToCrt, wideOffset, pointCrt, pointPre.pos);
+            AddEndRect(toFill, pointCrt.pos + lineInfo.roundRadius * dirPreToCrt, wideOffset, pointCrt, pointPre.pos);
         }
         else
         {
-            wideOffset = Vector3.up * (pointCrt.radius + lineInfo.radius);
-            roundOffset = lineInfo.radius * lineInfo.radius * Vector3.right;
+            wideOffset = Vector3.up * (pointCrt.radius + lineInfo.roundRadius);
+            roundOffset = lineInfo.roundRadius * lineInfo.roundRadius * Vector3.right;
             PointInfo pointPre = lineInfo.points[0];
             AddEndRect(toFill, pointPre.pos + roundOffset, wideOffset, pointCrt, pointPre.pos - roundOffset);
         }
@@ -154,7 +154,7 @@ public class LinesForUGUIOld : Image
         // sdOrientedBox: abPos
         vertexLeft.uv0 = new Vector4(posA.x, posA.y, posB.x, posB.y);
         // sdOrientedBox: thickness, round, blank
-        vertexLeft.uv1 = new Vector4(pointCrt.radius * 2, lineCrt.radius, lineCrt.blankStart, lineCrt.blankLen);
+        vertexLeft.uv1 = new Vector4(pointCrt.radius * 2, lineCrt.roundRadius, lineCrt.blankStart, lineCrt.blankLen);
 
         vertexLeft.position = midPos + wideOffset;
         // os, fadeRadius, offsetStart

@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System.Reflection;
 
 public class LinesForUGUI : Image
 {
@@ -40,10 +41,7 @@ public class LinesForUGUI : Image
         lineCrt = lineInfo;
         disLeft = disRight = 0;
 
-        if (lineCrt.points.Count > 1)
-        {
-            AddStartQuad(toFill);
-        }
+        AddStartQuad(toFill);
 
         for (int i = 1; i < lineCrt.points.Count - 2; i++)
         {
@@ -58,25 +56,39 @@ public class LinesForUGUI : Image
 
     private void AddStartQuad(VertexHelper toFill)
     {
-        PointInfo ctrPoint = lineCrt.points[0];
-        PointInfo nexPoint = lineCrt.points[1];
-        Vector3 pointDir = PointDir(ctrPoint.pos, nexPoint.pos);
-        Vector3 offsetDir = new(-pointDir.y, pointDir.x, 0);
-
-        AddTwoVert(toFill, ctrPoint, ctrPoint.radius * offsetDir, ctrPoint, nexPoint, false);
-
-        ctrPoint = lineCrt.points[1];
-        if (lineCrt.points.Count > 2)
+        if (lineCrt.points.Count > 1)
         {
-            Vector3 nexPointDir = PointDir(ctrPoint.pos, lineCrt.points[2].pos);
-            AddMidTwoVert(toFill, ctrPoint, pointDir, nexPointDir, lineCrt.points[0], ctrPoint);
-        }
-        else
-        {
-            AddTwoVert(toFill, ctrPoint, ctrPoint.radius * offsetDir, lineCrt.points[0], ctrPoint);
-        }
+            PointInfo ctrPoint = lineCrt.points[0];
+            PointInfo nexPoint = lineCrt.points[1];
+            Vector3 pointDir = PointDir(ctrPoint.pos, nexPoint.pos);
+            Vector3 offsetDir = new(-pointDir.y, pointDir.x, 0);
+            float radius = ctrPoint.radius + lineCrt.roundRadius;
 
-        AddTwoTriangle(toFill);
+            AddTwoVert(toFill, ctrPoint, radius * offsetDir, ctrPoint, nexPoint);
+            disLeft = disRight = -lineCrt.roundRadius;
+
+            Vector3 offset = -pointDir * lineCrt.roundRadius;
+            vertexLeftLast.position += offset;
+            vertexLeftLast.uv2.x = vertexLeftLast.position.x; vertexLeftLast.uv2.y = vertexLeftLast.position.y;
+            vertexRightLast.position += offset;
+            vertexRightLast.uv2.x = vertexRightLast.position.x; vertexRightLast.uv2.y = vertexRightLast.position.y;
+
+            toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
+            toFill.SetUIVertex(vertexRightLast, vertexCount - 1);
+
+            ctrPoint = lineCrt.points[1];
+            if (lineCrt.points.Count > 2)
+            {
+                Vector3 nexPointDir = PointDir(ctrPoint.pos, lineCrt.points[2].pos);
+                AddMidTwoVert(toFill, ctrPoint, pointDir, nexPointDir, lineCrt.points[0], ctrPoint);
+            }
+            else
+            {
+                AddTwoVert(toFill, ctrPoint, radius * offsetDir, lineCrt.points[0], ctrPoint);
+            }
+
+            AddTwoTriangle(toFill);
+        }
     }
 
     private void AddMidQuad(VertexHelper toFill, int index)
@@ -104,23 +116,40 @@ public class LinesForUGUI : Image
         Vector3 pointDir = PointDir(prePoint.pos, ctrPoint.pos);
         Vector3 offsetDir = new(-pointDir.y, pointDir.x, 0);
 
-        AddTwoVert(toFill, ctrPoint, ctrPoint.radius * offsetDir, prePoint, ctrPoint);
+        AddTwoVert(toFill, ctrPoint, (ctrPoint.radius + lineCrt.roundRadius) * offsetDir, prePoint, ctrPoint);
+
+        Vector3 offset = pointDir * lineCrt.roundRadius;
+        vertexLeftLast.uv0.z = vertexLeftLast.uv0.z + offset.x; vertexLeftLast.uv0.w = vertexLeftLast.uv0.w + offset.y;
+        vertexLeftLast.position += offset;
+        vertexLeftLast.uv2.x = vertexLeftLast.position.x; vertexLeftLast.uv2.y = vertexLeftLast.position.y;
+        vertexRightLast.uv0.z = vertexRightLast.uv0.z + offset.x; vertexRightLast.uv0.w = vertexRightLast.uv0.w + offset.y;
+        vertexRightLast.position += offset;
+        vertexRightLast.uv2.x = vertexRightLast.position.x; vertexRightLast.uv2.y = vertexRightLast.position.y;
+
+        toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
+        toFill.SetUIVertex(vertexRightLast, vertexCount - 1);
 
         AddTwoTriangle(toFill);
     }
 
     private void ReuseTwoVert(VertexHelper toFill, PointInfo aPoint, PointInfo bPoint)
     {
-        vertexRightLast.uv0 = vertexLeftLast.uv0 = new Vector4(aPoint.pos.x, aPoint.pos.y, bPoint.pos.x, bPoint.pos.y);
-        //Debug.LogError("abPos " + vertexRightLast.uv0);
+        Vector3 a2bDir = PointDir(aPoint.pos, bPoint.pos);
+        float cornerCutLen = 0.5f * Mathf.Abs(disLeft - disRight) + lineCrt.roundRadius;
+        Vector3 cornerCut = cornerCutLen * a2bDir;
 
-        if (disLeft < disRight)
+        vertexRightLast.uv0 = vertexLeftLast.uv0 = 
+            new Vector4(aPoint.pos.x + cornerCut.x, aPoint.pos.y + cornerCut.y, bPoint.pos.x, bPoint.pos.y);
+
+        if (disLeft > disRight)
         {
-            disRight = disLeft - (disRight - disLeft);
+            disLeft = disRight - disLeft;
+            disRight = 0;
         }
         else
         {
-            disLeft = disRight - (disLeft - disRight);
+            disRight = disLeft - disRight;
+            disLeft = 0;
         }
 
         vertexLeftLast.uv2.z = disLeft;
@@ -138,36 +167,38 @@ public class LinesForUGUI : Image
         Vector3 offsetDir = new(-dirAverage.y, dirAverage.x, 0);
         float cos = dirAverage.x * pointDir.x + dirAverage.y * pointDir.y;
         float zoom = Mathf.Min(1.0f / cos, 99999);
-        AddTwoVert(toFill, ctrPoint, zoom * ctrPoint.radius * offsetDir, aPoint, bPoint);
+        AddTwoVert(toFill, ctrPoint, zoom * (ctrPoint.radius + lineCrt.roundRadius) * offsetDir, aPoint, bPoint);
     }
 
-    private void AddTwoVert(VertexHelper toFill, PointInfo ctrPoint, Vector3 offset,
-        PointInfo aPoint, PointInfo bPoint, bool addDis = true)
+    private void AddTwoVert(VertexHelper toFill, PointInfo ctrPoint, Vector3 offset, PointInfo aPoint, PointInfo bPoint)
     {
+        Vector3 posLeft = ctrPoint.pos + offset;
+        Vector3 posRight = ctrPoint.pos - offset;
+
         UIVertex vertexLeft = UIVertex.simpleVert;
-        vertexLeft.position = ctrPoint.pos + offset;
+        vertexLeft.position = posLeft;
         vertexLeft.color = ctrPoint.color * color;
-        vertexLeft.uv0 = new Vector4(aPoint.pos.x, aPoint.pos.y, bPoint.pos.x, bPoint.pos.y); 
-        //Debug.LogError("abPos " + vertexLeft.uv0);
-        vertexLeft.uv1 = new Vector4(ctrPoint.radius, lineCrt.blankStart, lineCrt.blankLen);
+
+        disLeft += (vertexLeftLast.position - posLeft).magnitude;
+        disRight += (vertexRightLast.position - posRight).magnitude;
+
+        Vector3 a2bDir = PointDir(aPoint.pos, bPoint.pos);
+        float cornerCutLen = 0.5f * Mathf.Abs(disLeft - disRight) + lineCrt.roundRadius;
+        Vector3 cornerCut = cornerCutLen * a2bDir;
+
+        vertexLeft.uv0 = new Vector4(aPoint.pos.x, aPoint.pos.y, bPoint.pos.x - cornerCut.x, bPoint.pos.y - cornerCut.y); 
+        vertexLeft.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
 
         UIVertex vertexRight = vertexLeft;
-        vertexRight.position = ctrPoint.pos - offset;
+        vertexRight.position = posRight;
 
-        if (addDis)
-        {
-            disLeft += (vertexLeftLast.position - vertexLeft.position).magnitude;
-            disRight += (vertexRightLast.position - vertexRight.position).magnitude;
-        }
-        
-        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, disLeft);
+        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, disLeft, lineCrt.fadeRadius);
         toFill.AddVert(vertexLeft);
         vertexLeftLast = vertexLeft;
 
-        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, disRight);
+        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, disRight, lineCrt.fadeRadius);
         toFill.AddVert(vertexRight);
         vertexRightLast = vertexRight;
-        Debug.LogError("disLeft " + disLeft + " disRight " + disRight);
         vertexCount += 2;
     }
 
