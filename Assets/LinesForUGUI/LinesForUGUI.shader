@@ -131,8 +131,8 @@ Shader "LinesForUGUI"
                 float fadeRadius = IN.custom2.w;
 
                 float sd = sdOrientedBox(os, abPos.xw, abPos.zy, thickness) - roundRadius;
-                sd = opSubtraction(opUnion(sdCircle(os - abPos.xy, 2), sdCircle(os - abPos.zw, 2)), sd);
-
+                sd = opSubtraction(opUnion(sdCircle(os - abPos.xy, 4), sdCircle(os - abPos.zw, 4)), sd);
+                //sd = opUnion(sdCircle(os - abPos.xy, 4), sdCircle(os - abPos.zw, 4));
                 half4 color = IN.color;
                 float fade = saturate(-sd * (1 / fadeRadius));
                 fade *= fade; fade *= fade;
