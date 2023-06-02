@@ -7,6 +7,6 @@ public class PointInfo
     public Vector3 pos = Vector3.zero;
 
     public Color color = Color.white;
-
-    public float radius = 50;
+    [Range(0, 128)]
+    public float radius = 0;
 }

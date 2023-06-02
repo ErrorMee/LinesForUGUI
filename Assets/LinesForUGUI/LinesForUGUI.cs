@@ -38,6 +38,7 @@ public class LinesForUGUI : Image
         }
         lineCrt = lineInfo;
         disLeft = disRight = 0;
+        vertexLeftLast = vertexRightLast = default;
 
         AddStartQuad(toFill);
 
