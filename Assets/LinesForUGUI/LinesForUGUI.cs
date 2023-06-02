@@ -12,8 +12,7 @@ public class LinesForUGUI : Image
     VertexHelper toFill;
     int vertexCount = 0; LineInfo lineCrt;
     UIVertex vertexLeftLast; UIVertex vertexRightLast;
-    float disLeft = 0;
-    float disRight = 0;
+    float disLeft = 0; float disRight = 0;
 
     public void Draw(List<LineInfo> lines)
     {
@@ -53,7 +52,7 @@ public class LinesForUGUI : Image
 
     private void CreateStartVertex()
     {
-        disLeft = disRight = 0;
+        disLeft = disRight = -lineCrt.roundRadius;
         PointInfo ctrPoint = lineCrt.points[0];
         Vector3 pointDir = Vector3.right;
         if (lineCrt.points.Count > 1)
@@ -271,7 +270,7 @@ public class LinesForUGUI : Image
         Vector3 a2bDir = PointDir(aPoint.pos, bPoint.pos);
         float cornerCutLen = 0.5f * Mathf.Abs(disLeft - disRight) + lineCrt.roundRadius;
         Vector3 cornerCut = cornerCutLen * a2bDir;
-
+        //ab
         vertexLeft.uv0 = new Vector4(aPoint.pos.x + cornerCut.x, aPoint.pos.y + cornerCut.y,
             bPoint.pos.x - cornerCut.x, bPoint.pos.y - cornerCut.y);
         vertexLeft.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
@@ -293,6 +292,7 @@ public class LinesForUGUI : Image
     {
         Debug.LogError(tag + " ab " + vertexLeft.uv0.ToString("F0"));
         //Debug.LogError(tag + " os Left " + vertexLeft.uv2.x + "," + vertexLeft.uv2.y + " Right " + vertexRight.uv2.x + "," + vertexRight.uv2.y);
+        //Debug.LogError(tag + " lineDis Left " + vertexLeft.uv2.z + " Right " + vertexRight.uv2.z);
     }
 
     private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)
