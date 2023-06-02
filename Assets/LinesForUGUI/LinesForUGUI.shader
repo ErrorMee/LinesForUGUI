@@ -99,6 +99,7 @@ Shader "LinesForUGUI"
 
             float opUnion(float d1, float d2) { return min(d1, d2); }
             float opSubtraction(float d1, float d2) { return max(-d1, d2); }
+            float opIntersection(float d1, float d2) { return max(d1, d2); }
 
             float sdCircle(float2 p, float r)
             {
@@ -137,14 +138,16 @@ Shader "LinesForUGUI"
                 float blockLen = solidLen + blankLen;
                 float lineDis = IN.custom2.z;
                 int blockIndex = floor(lineDis / blockLen);
-                //return half4((blockIndex + 1) / 3.0, 0, 0, 1);
+                //return float4(blockIndex * 0.3, 0, 0, 1);
 
                 float4 abPosBlock;
                 abPosBlock.xy = abPos.xy + blockIndex * blockLen * a2bDir;
-                abPosBlock.zw = abPosBlock.xy + a2bDir * solidLen;
+                abPosBlock.zw = abPosBlock.xy + (solidLen - roundRadius * 2) * a2bDir;
                 float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
 
-                float sd = sdLocal;//sdGlobal;
+                sdLocal -= step(min(solidLen, blankLen), 0) * 1024;
+
+                float sd = opIntersection(sdLocal, sdGlobal);
     
                 half4 color = IN.color;
                 float fade = saturate(-sd * (1 / fadeRadius));

@@ -71,12 +71,12 @@ public class LinesForUGUI : Image
             vertexRightLast.uv2.x = vertexRightLast.position.x; vertexRightLast.uv2.y = vertexRightLast.position.y;
             //Debug.LogError(" ---AddStartQuad--- os " + vertexLeftLast.uv2 + "  -  " + vertexRightLast.uv2);
 
-            vertexLeftLast.uv2.z = vertexRightLast.uv2.z = disLeft = disRight = -lineCrt.roundRadius;
-            Debug.LogError(" ---AddStartQuad--- disLeft " + disLeft);
+            vertexLeftLast.uv2.z = vertexRightLast.uv2.z = disLeft = disRight = 0;
+            //Debug.LogError(" ---AddStartQuad--- disLeft " + disLeft);
 
             vertexLeftLast.uv0.x = vertexRightLast.uv0.x = vertexLeftLast.uv0.x + offset.x;
             vertexLeftLast.uv0.y = vertexRightLast.uv0.y = vertexLeftLast.uv0.y + offset.y;
-            //Debug.LogError(" ---SetUIVertex--- AddStartQuad ab " + vertexRightLast.uv0.x + "," + vertexRightLast.uv0.z);
+            Debug.LogError(" ---AddStartQuad--- ab " + vertexRightLast.uv0.x + "," + vertexRightLast.uv0.z);
             toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
             toFill.SetUIVertex(vertexRightLast, vertexCount - 1);
 
@@ -87,16 +87,22 @@ public class LinesForUGUI : Image
                 AddMidTwoVert(toFill, ctrPoint, pointDir, nexPointDir, lineCrt.points[0], ctrPoint);
                 vertexLeftLast.uv0.x = vertexRightLast.uv0.x = vertexLeftLast.uv0.x + offset.x;
                 vertexLeftLast.uv0.y = vertexRightLast.uv0.y = vertexLeftLast.uv0.y + offset.y;
-                //Debug.LogError(" ---SetUIVertex--- AddStartQuad ab " + vertexRightLast.uv0.x + "," + vertexRightLast.uv0.z);
+                Debug.LogError(" ---AddStartQuad--- ab " + vertexRightLast.uv0.x + "," + vertexRightLast.uv0.z);
                 toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
                 toFill.SetUIVertex(vertexRightLast, vertexCount - 1);
+
+                AddTwoTriangle(toFill);
             }
             else
             {
                 AddTwoVert(toFill, ctrPoint, radius * offsetDir, lineCrt.points[0], ctrPoint);
-            }
 
-            AddTwoTriangle(toFill);
+                offset = -offset;
+
+                OffsetTwoVert(toFill, offset, false);
+
+                AddTwoTriangle(toFill);
+            }
         }
     }
 
@@ -128,26 +134,39 @@ public class LinesForUGUI : Image
         Vector3 offset = pointDir * lineCrt.roundRadius;
         vertexLeftLast.uv0.z = vertexRightLast.uv0.z = vertexLeftLast.uv0.z + offset.x;
         vertexLeftLast.uv0.w = vertexRightLast.uv0.w = vertexLeftLast.uv0.w + offset.y;
-        //Debug.LogError(" ---SetUIVertex--- AddEndQuad ab " + vertexLeftLast.uv0.x + "," + vertexRightLast.uv0.z);
+        Debug.LogError(" ---AddEndQuad--- ab " + vertexLeftLast.uv0.x + "," + vertexRightLast.uv0.z);
         toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
         toFill.SetUIVertex(vertexRightLast, vertexCount - 1);
 
         AddTwoVert(toFill, ctrPoint, (ctrPoint.radius + lineCrt.roundRadius) * offsetDir, prePoint, ctrPoint);
 
-        vertexLeftLast.uv0.z = vertexRightLast.uv0.z = vertexLeftLast.uv0.z + offset.x;
-        vertexLeftLast.uv0.w = vertexRightLast.uv0.w = vertexLeftLast.uv0.w + offset.y;
-        //Debug.LogError(" ---SetUIVertex--- AddEndQuad ab " + vertexLeftLast.uv0.x + "," + vertexRightLast.uv0.z);
+        OffsetTwoVert(toFill, offset, true);
+
+        AddTwoTriangle(toFill);
+    }
+
+    private void OffsetTwoVert(VertexHelper toFill, Vector3 offset, bool isEnd)
+    {
+        if (isEnd)
+        {
+            vertexLeftLast.uv0.z = vertexRightLast.uv0.z = vertexLeftLast.uv0.z + offset.x;
+            vertexLeftLast.uv0.w = vertexRightLast.uv0.w = vertexLeftLast.uv0.w + offset.y;
+        } else
+        {
+            vertexLeftLast.uv0.x = vertexRightLast.uv0.x = vertexLeftLast.uv0.x - offset.x;
+            vertexLeftLast.uv0.y = vertexRightLast.uv0.y = vertexLeftLast.uv0.y - offset.y;
+        }
+        
+        Debug.LogError("---OffsetTwoVert--- ab " + vertexLeftLast.uv0.x + "," + vertexRightLast.uv0.z);
         vertexLeftLast.position += offset;
         vertexLeftLast.uv2.x = vertexLeftLast.position.x; vertexLeftLast.uv2.y = vertexLeftLast.position.y;
         vertexRightLast.position += offset;
         vertexRightLast.uv2.x = vertexRightLast.position.x; vertexRightLast.uv2.y = vertexRightLast.position.y;
-        //Debug.LogError(" ---AddEndQuad--- os " + vertexLeftLast.uv2 + "  -  " + vertexRightLast.uv2);
+        //Debug.LogError("---OffsetTwoVert--- os " + vertexLeftLast.uv2 + "  -  " + vertexRightLast.uv2);
         vertexLeftLast.uv2.z += lineCrt.roundRadius; vertexRightLast.uv2.z += lineCrt.roundRadius;
-        Debug.LogError(" ---AddEndQuad--- disLeft " + vertexLeftLast.uv2.z + " disRight " + vertexRightLast.uv2.z);
-
+        //Debug.LogError("---OffsetTwoVert--- disLeft " + vertexLeftLast.uv2.z + " disRight " + vertexRightLast.uv2.z);
         toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
         toFill.SetUIVertex(vertexRightLast, vertexCount - 1);
-        AddTwoTriangle(toFill);
     }
 
     private void ReuseTwoVert(VertexHelper toFill, PointInfo aPoint, PointInfo bPoint)
@@ -158,21 +177,21 @@ public class LinesForUGUI : Image
 
         vertexRightLast.uv0 = vertexLeftLast.uv0 = new Vector4(aPoint.pos.x + cornerCut.x, aPoint.pos.y + cornerCut.y, 
             bPoint.pos.x - cornerCut.x, bPoint.pos.y - cornerCut.y);
-        //Debug.LogError(" --- ReuseTwoVert ab " + vertexLeftLast.uv0.x + "," + vertexRightLast.uv0.z);
+        Debug.LogError("--- ReuseTwoVert ab " + vertexLeftLast.uv0.x + "," + vertexRightLast.uv0.z);
         if (disLeft > disRight)
         {
-            disLeft = disRight - disLeft - lineCrt.roundRadius;
+            disLeft = disRight - disLeft;
             disRight = -lineCrt.roundRadius;
         }
         else
         {
-            disRight = disLeft - disRight - lineCrt.roundRadius;
-            disLeft = -lineCrt.roundRadius;
+            disRight = disLeft - disRight;
+            disLeft = 0;
         }
 
         vertexLeftLast.uv2.z = disLeft;
         vertexRightLast.uv2.z = disRight;
-        Debug.LogError("Reuse disLeft " + disLeft + " disRight " + disRight);
+        //Debug.LogError("Reuse disLeft " + disLeft + " disRight " + disRight);
         //Debug.LogError(" ---ReuseTwoVert--- os " + vertexLeftLast.uv2 + "  -  " + vertexRightLast.uv2);
         toFill.AddVert(vertexLeftLast);
         toFill.AddVert(vertexRightLast);
@@ -207,7 +226,7 @@ public class LinesForUGUI : Image
 
         vertexLeft.uv0 = new Vector4(aPoint.pos.x + cornerCut.x, aPoint.pos.y + cornerCut.y,
             bPoint.pos.x - cornerCut.x, bPoint.pos.y - cornerCut.y);
-        //Debug.LogError("AddTwoVert ab " + vertexLeft.uv0.x + "," + vertexLeft.uv0.z);
+        Debug.LogError("AddTwoVert ab " + vertexLeft.uv0.x + "," + vertexLeft.uv0.z);
         vertexLeft.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
 
         UIVertex vertexRight = vertexLeft;
@@ -222,7 +241,7 @@ public class LinesForUGUI : Image
         vertexRightLast = vertexRight;
         vertexCount += 2;
         //Debug.LogError(" AddTwoVert os " + vertexLeft.uv2 + "  -  " + vertexRight.uv2);
-        Debug.LogError("Add disLeft " + disLeft + " disRight " + disRight);
+        //Debug.LogError("Add disLeft " + disLeft + " disRight " + disRight);
     }
 
     private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)
