@@ -22,7 +22,7 @@ public class LinesForUGUI : Image
 
     protected override void OnPopulateMesh(VertexHelper toFill)
     {
-        toFill.Clear();this.toFill = toFill;
+        toFill.Clear(); this.toFill = toFill;
         vertexCount = 0;
         for (int i = 0; i < lines.Count; i++)
         {
@@ -37,9 +37,7 @@ public class LinesForUGUI : Image
             return;
         }
         lineCrt = lineInfo;
-        disLeft = disRight = 0;
-        vertexLeftLast = vertexRightLast = default;
-
+        
         AddStartQuad();
 
         for (int i = 1; i < lineCrt.points.Count - 2; i++)
@@ -53,8 +51,30 @@ public class LinesForUGUI : Image
         }
     }
 
+    private void CreateStartVertex()
+    {
+        disLeft = disRight = 0;
+        PointInfo ctrPoint = lineCrt.points[0];
+        Vector3 pointDir = Vector3.right;
+        if (lineCrt.points.Count > 1)
+        {
+            pointDir = PointDir(ctrPoint.pos, lineCrt.points[1].pos);
+        }
+        Vector3 offsetDir = new(-pointDir.y, pointDir.x, 0);
+        Vector3 offset = offsetDir * (ctrPoint.radius + lineCrt.roundRadius);
+        Vector3 round = -pointDir * lineCrt.roundRadius;
+
+        UIVertex vertexLeft = UIVertex.simpleVert;
+        vertexLeft.position = ctrPoint.pos + offset + round;
+        UIVertex vertexRight = vertexLeft;
+        vertexRight.position = ctrPoint.pos - offset + round;
+        vertexLeftLast = vertexLeft;
+        vertexRightLast = vertexRight;
+    }
+
     private void AddStartQuad()
     {
+        CreateStartVertex();
         if (lineCrt.points.Count > 1)
         {
             PointInfo ctrPoint = lineCrt.points[0];
@@ -128,8 +148,14 @@ public class LinesForUGUI : Image
     {
         vertexLeftLast.uv0.x = vertexRightLast.uv0.x = ctrPoint.pos.x;
         vertexLeftLast.uv0.y = vertexRightLast.uv0.y = ctrPoint.pos.y;
-        vertexLeftLast.uv0.z = vertexRightLast.uv0.z = nexPoint.pos.x + bOffSet.x;
-        vertexLeftLast.uv0.w = vertexRightLast.uv0.w = nexPoint.pos.y + bOffSet.y;
+        float disGap = vertexLeftLast.uv2.z - vertexRightLast.uv2.z;
+        Vector3 gapOffset = 0.5f * disGap * bOffSet.normalized;
+        if (Mathf.Min(lineCrt.blankStart, lineCrt.blankLen) <= 0)
+        {
+            gapOffset = -gapOffset;
+        }
+        vertexLeftLast.uv0.z = vertexRightLast.uv0.z = nexPoint.pos.x + bOffSet.x + gapOffset.x;
+        vertexLeftLast.uv0.w = vertexRightLast.uv0.w = nexPoint.pos.y + bOffSet.y + gapOffset.y;
         UpdateLastTwo();
     }
 
@@ -191,8 +217,7 @@ public class LinesForUGUI : Image
     private void UpdateLastTwo()
     {
         toFill.SetUIVertex(vertexLeftLast, vertexCount - 2);
-        toFill.SetUIVertex(vertexRightLast, vertexCount - 1); 
-        DebugVert("+++ UpdateLastTwo", vertexLeftLast, vertexRightLast);
+        toFill.SetUIVertex(vertexRightLast, vertexCount - 1); DebugVert("+++ UpdateLastTwo", vertexLeftLast, vertexRightLast);
     }
 
     private void ReuseTwoVert(PointInfo aPoint, PointInfo bPoint)
