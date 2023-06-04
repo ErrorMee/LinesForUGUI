@@ -284,7 +284,7 @@ MonoBehaviour:
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
   lines:
-  - fadeRadius: 4
+  - fadeRadius: 3
     roundRadius: 10
     blankStart: 21.8
     blankLen: 17.6

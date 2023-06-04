@@ -59,14 +59,14 @@ public class LinesForUGUI : Image
         {
             pointDir = PointDir(ctrPoint.pos, lineCrt.points[1].pos);
         }
-        Vector3 offsetDir = new(-pointDir.y, pointDir.x, 0);
-        Vector3 offset = offsetDir * (ctrPoint.radius + lineCrt.roundRadius);
-        Vector3 round = -pointDir * lineCrt.roundRadius;
+        Vector3 thicknessDir = new(-pointDir.y, pointDir.x, 0);
+        Vector3 thicknessOffset = thicknessDir * (ctrPoint.radius + lineCrt.roundRadius);
+        Vector3 roundOffset = -pointDir * lineCrt.roundRadius;
 
         UIVertex vertexLeft = UIVertex.simpleVert;
-        vertexLeft.position = ctrPoint.pos + offset + round;
+        vertexLeft.position = ctrPoint.pos + thicknessOffset + roundOffset;
         UIVertex vertexRight = vertexLeft;
-        vertexRight.position = ctrPoint.pos - offset + round;
+        vertexRight.position = ctrPoint.pos - thicknessOffset + roundOffset;
         vertexLeftLast = vertexLeft;
         vertexRightLast = vertexRight;
     }
@@ -79,10 +79,10 @@ public class LinesForUGUI : Image
             PointInfo ctrPoint = lineCrt.points[0];
             PointInfo nexPoint = lineCrt.points[1];
             Vector3 pointDir = PointDir(ctrPoint.pos, nexPoint.pos);
-            Vector3 offsetDir = new(-pointDir.y, pointDir.x, 0);
+            Vector3 thicknessDir = new(-pointDir.y, pointDir.x, 0);
             float radius = ctrPoint.radius + lineCrt.roundRadius;
 
-            AddTwoVert(ctrPoint, radius * offsetDir, ctrPoint, nexPoint);
+            AddTwoVert(ctrPoint, radius * thicknessDir, ctrPoint, nexPoint);
 
             Vector3 offset = -pointDir * lineCrt.roundRadius;
             vertexLeftLast.position += offset;
@@ -108,7 +108,7 @@ public class LinesForUGUI : Image
                 AdjustStart(ctrPoint, nexPoint, Vector3.zero);
 
                 ctrPoint = lineCrt.points[1];
-                AddTwoVert(ctrPoint, radius * offsetDir, lineCrt.points[0], ctrPoint);
+                AddTwoVert(ctrPoint, radius * thicknessDir, lineCrt.points[0], ctrPoint);
 
                 offset = -offset;
 
