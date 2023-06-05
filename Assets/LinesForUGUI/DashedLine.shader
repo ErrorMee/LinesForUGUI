@@ -62,20 +62,20 @@ Shader "DashedLine"
             {
                 float4 vertex   : POSITION;
                 float4 color    : COLOR;
-                float4 custom0 : TEXCOORD0;//abPos
-                float4 custom1 : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
-                float4 custom2 : TEXCOORD2;//os(xy), fadeRadius, lineDis
+                float4 custom0  : TEXCOORD0;//abPos
+                float4 custom1  : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
+                float4 custom2  : TEXCOORD2;//os(xy), fadeRadius, lineDis
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
             {
-                float4 vertex   : SV_POSITION;
-                float4 color : COLOR;
-                float4 worldPosition : TEXCOORD0;
-                float4 custom0  : TEXCOORD1;
-                float4 custom1 : TEXCOORD2;
-                float4 custom2 : TEXCOORD3;
+                float4 vertex           : SV_POSITION;
+                float4 color            : COLOR;
+                float4 worldPosition    : TEXCOORD0;
+                float4 custom0          : TEXCOORD1;
+                float4 custom1          : TEXCOORD2;
+                float4 custom2          : TEXCOORD3;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 

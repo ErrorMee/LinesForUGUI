@@ -328,6 +328,7 @@ public class LinesForUGUI : Image
         }
     }
 }
+
 #if UNITY_EDITOR
 [CustomEditor(typeof(LinesForUGUI), true)]
 public class LinesForUGUIEditor : GraphicEditor
