@@ -1,6 +1,6 @@
 // Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
-Shader "LinesForUGUI"
+Shader "DashedLine"
 {
     Properties
     {
@@ -125,34 +125,7 @@ Shader "LinesForUGUI"
 
             half4 frag(v2f IN) : SV_Target
             {
-                float4 abPos = IN.custom0;
-                float thickness = IN.custom1.x;
-                float roundRadius = IN.custom1.w;
-                float2 os = IN.custom2.xy;
-                float fadeRadius = IN.custom2.z;
-
-                float sdGlobal = sdOrientedBox(os, abPos.xw, abPos.zy, thickness) - roundRadius;
-
-                float2 a2bDir = normalize(abPos.zw - abPos.xy);
-                float solidLen = IN.custom1.y; float blankLen = IN.custom1.z;
-                float blockLen = solidLen + blankLen;
-                float lineDis = IN.custom2.w;
-                int blockIndex = floor(lineDis / blockLen);
-                //return float4(blockIndex * 0.3, 0, 0, 1);
-
-                float4 abPosBlock;
-                abPosBlock.xy = abPos.xy + blockIndex * blockLen * a2bDir;
-                abPosBlock.zw = abPosBlock.xy + (solidLen - roundRadius * 2) * a2bDir;
-                float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
-
-                sdLocal -= step(min(solidLen, blankLen), 0) * 1024;
-
-                float sd = opIntersection(sdLocal, sdGlobal);
-    
                 half4 color = IN.color;
-                float fade = saturate(-sd * (1 / fadeRadius));
-                fade *= fade; fade *= fade;
-                color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
