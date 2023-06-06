@@ -278,11 +278,11 @@ public class LinesForUGUI : Image
         UIVertex vertexRight = vertexLeft;
         vertexRight.position = posRight;
 
-        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, lineCrt.fadeRadius, disLeft);
+        vertexLeft.uv2 = new Vector4(vertexLeft.position.x, vertexLeft.position.y, 1, disLeft);
         toFill.AddVert(vertexLeft); 
         vertexLeftLast = vertexLeft;
 
-        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, lineCrt.fadeRadius, disRight);
+        vertexRight.uv2 = new Vector4(vertexRight.position.x, vertexRight.position.y, 1, disRight);
         toFill.AddVert(vertexRight); DebugVert("Add", vertexLeft, vertexRight);
         vertexRightLast = vertexRight;
         vertexCount += 2;

@@ -5,8 +5,8 @@ Shader "DashedLine"
     Properties
     {
         [PerRendererData] _MainTex("Sprite Texture", 2D) = "white" {}
-
-        _StencilComp("Stencil Comparison", Float) = 8
+        _FadeRadius("AA FadeRadius", Range(0, 128)) = 8
+        _StencilComp("Stencil Comparison", Float) = 1
         _Stencil("Stencil ID", Float) = 0
         _StencilOp("Stencil Operation", Float) = 0
         _StencilWriteMask("Stencil Write Mask", Float) = 255
@@ -64,8 +64,7 @@ Shader "DashedLine"
                 float4 color    : COLOR;
                 float4 custom0  : TEXCOORD0;//abPos
                 float4 custom1  : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
-                float4 custom2  : TEXCOORD2;//os(xy), fadeRadius, lineDis
-                float4 custom3  : TEXCOORD3;//offsetA
+                float4 custom2  : TEXCOORD2;//os(xy), lineDis, offsetA
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -77,12 +76,12 @@ Shader "DashedLine"
                 float4 custom0          : TEXCOORD1;
                 float4 custom1          : TEXCOORD2;
                 float4 custom2          : TEXCOORD3;
-                float offsetA : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
             sampler2D _MainTex;
             float4 _ClipRect;
+            float _FadeRadius;
 
             v2f vert(appdata_t v)
             {
@@ -95,8 +94,7 @@ Shader "DashedLine"
 
                 OUT.custom0 = v.custom0;//abPos
                 OUT.custom1 = v.custom1;//thickness, blankStart, blankLen, roundRadius
-                OUT.custom2 = v.custom2;//os(xy), fadeRadius, lineDis
-                OUT.offsetA = v.custom3.x;
+                OUT.custom2 = v.custom2;//os(xy), lineDis, offsetA
                 return OUT;
             }
 
@@ -119,23 +117,22 @@ Shader "DashedLine"
                 float solidLen = blankStart + roundRadius * 2;
                 float blankLen = IN.custom1.z;
                 float blockLen = solidLen + blankLen;
-                float lineDis = IN.custom2.w;
+                float lineDis = IN.custom2.z;
                 float2 os = IN.custom2.xy;
-                float fadeRadius = IN.custom2.z;
 
 
                 float2 a2bDir = normalize(abPos.zw - abPos.xy);
                 int blockIndex = floor(lineDis / blockLen);
 
                 float4 abPosBlock;
-                abPosBlock.xy = abPos.xy + (blockIndex * blockLen + roundRadius + IN.offsetA) * a2bDir;
+                abPosBlock.xy = abPos.xy + (blockIndex * blockLen + roundRadius + IN.custom2.w) * a2bDir;
                 abPosBlock.zw = abPosBlock.xy + blankStart * a2bDir;
                 float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
 
                 float sd = sdLocal;
 
                 half4 color = IN.color;
-                float fade = saturate(-sd * (1 / fadeRadius)); fade *= fade; fade *= fade;
+                float fade = saturate(-sd * (1.0 / _FadeRadius)); fade *= fade; fade *= fade;
                 color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT

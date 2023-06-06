@@ -13,6 +13,9 @@ public class DashedLine : Image
     int vertexCount = 0; LineInfo lineCrt;
     UIVertex lastVertLeft; UIVertex lastVertRight;
     float dashLen; float lastSegmentLen;
+    
+    [SerializeField][Range(0, 128)] float fadeRadius;
+    static readonly int FadeRadiusKey = Shader.PropertyToID("_FadeRadius");
 
     public void Draw(List<LineInfo> lines)
     {
@@ -23,6 +26,7 @@ public class DashedLine : Image
     {
         toFill.Clear(); this.toFill = toFill;
         vertexCount = 0;
+        material.SetFloat(FadeRadiusKey, fadeRadius);
         for (int i = 0; i < lines.Count; i++)
         {
             Draw(lines[i]);
@@ -176,18 +180,17 @@ public class DashedLine : Image
         vertex.color = ctrPoint.color * color;
         vertex.uv0 = new Vector4(start.x, start.y, end.x, end.y);
         vertex.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
-        vertex.uv2.z = lineCrt.fadeRadius;
-        vertex.uv3.x = -lastSegmentLen % dashLen;
+        vertex.uv2.w = -lastSegmentLen % dashLen;
 
 
-        vertex.position = start + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.w = 0;
+        vertex.position = start + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.z = 0;
         toFill.AddVert(vertex); DebugVert("dis start ", vertex);
 
         vertex.position = start - offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
         toFill.AddVert(vertex);
 
         lastSegmentLen = (start - end).magnitude;
-        vertex.position = end + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.w = lastSegmentLen;
+        vertex.position = end + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.z = lastSegmentLen;
         toFill.AddVert(vertex); lastVertLeft = vertex; DebugVert("dis end ", vertex);
 
         vertex.position = end - offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; 
@@ -200,7 +203,7 @@ public class DashedLine : Image
 
     private void DebugVert(string tag, UIVertex vertex)
     {
-        Debug.LogError(tag + vertex.uv2.w + " ab " + vertex.uv0.x + "," + vertex.uv0.z + " offsetA " + vertex.uv3.x);
+        Debug.LogError(tag + vertex.uv2.z + " ab " + vertex.uv0.x + "," + vertex.uv0.z + " offsetA " + vertex.uv3.x);
     }
 
     private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)
@@ -262,11 +265,13 @@ public class DashedLineEditor : GraphicEditor
         ComponentConverter.ConvertTo<DashedLine>(command.context);
     }
 
+    SerializedProperty fadeRadius;
     SerializedProperty lines;
 
     protected override void OnEnable()
     {
         base.OnEnable();
+        fadeRadius = serializedObject.FindProperty("fadeRadius");
         lines = serializedObject.FindProperty("lines");
     }
 
@@ -284,6 +289,7 @@ public class DashedLineEditor : GraphicEditor
     protected void CustomGUI()
     {
         EditorGUI.BeginChangeCheck();
+        EditorGUILayout.PropertyField(fadeRadius);
         EditorGUILayout.PropertyField(lines);
         EditorGUI.EndChangeCheck();
     }

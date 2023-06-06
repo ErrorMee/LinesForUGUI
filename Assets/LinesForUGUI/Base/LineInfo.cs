@@ -6,8 +6,6 @@ using UnityEngine;
 public class LineInfo
 {
     [Range(0, 128)]
-    public float fadeRadius = 0;
-    [Range(0, 128)]
     public float roundRadius = 0;
     [Range(0, 128)]
     public float blankStart = 0;
