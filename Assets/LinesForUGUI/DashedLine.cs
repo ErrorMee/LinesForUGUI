@@ -12,7 +12,7 @@ public class DashedLine : Image
     VertexHelper toFill;
     int vertexCount = 0; LineInfo lineCrt;
     UIVertex lastVertLeft; UIVertex lastVertRight;
-    float lineDis = 0; float lastSegmentDis = 0;
+    float dashLen; float lastSegmentLen;
 
     public void Draw(List<LineInfo> lines)
     {
@@ -35,7 +35,8 @@ public class DashedLine : Image
         {
             return;
         }
-        lineCrt = lineInfo; lineDis = 0; lastSegmentDis = 0;
+        lineCrt = lineInfo; lastSegmentLen = 0;
+        dashLen = lineCrt.blankStart + lineCrt.roundRadius * 2 + lineCrt.blankLen;
 
         for (int i = 1; i < lineCrt.points.Count; i++)
         {
@@ -57,14 +58,13 @@ public class DashedLine : Image
             {
                 Vector3 startPos = prePoint.pos - pointDir * lineCrt.roundRadius;
                 Vector3 endPos = CalcEndPos(index, thicknessOffset);
-                AddRect(startPos, endPos, thicknessOffset, ctrPoint);
+                AddValidRect(startPos, endPos, thicknessOffset, ctrPoint);
             }
             else
             {
                 Vector3 startPos = prePoint.pos - pointDir * lineCrt.roundRadius;
                 Vector3 endPos = ctrPoint.pos + pointDir * lineCrt.roundRadius;
-                lastSegmentDis = (startPos - endPos).magnitude;
-                AddRect(startPos, endPos, thicknessOffset, ctrPoint);
+                AddValidRect(startPos, endPos, thicknessOffset, ctrPoint);
             }
             return;
         }
@@ -73,12 +73,10 @@ public class DashedLine : Image
         {
             Vector3 startPos = CalcStartPos(index, thicknessOffset);
             Vector3 endPos = ctrPoint.pos + pointDir * lineCrt.roundRadius;
-            lastSegmentDis = (startPos - endPos).magnitude;
-            AddRect(startPos, endPos, thicknessOffset, ctrPoint);
+            AddValidRect(startPos, endPos, thicknessOffset, ctrPoint);
             return;
         }
-
-        AddRect(CalcStartPos(index, thicknessOffset), CalcEndPos(index, thicknessOffset), thicknessOffset, ctrPoint);
+        AddValidRect(CalcStartPos(index, thicknessOffset), CalcEndPos(index, thicknessOffset), thicknessOffset, ctrPoint);
     }
 
     private Vector3 CalcStartPos(int index, Vector3 thicknessOffset)
@@ -112,13 +110,13 @@ public class DashedLine : Image
         {
             Vector3 leftPos = startPos + thicknessOffset;
             Vector3 rightPos = startPos - thicknessOffset;
-            FillGap(rightPos, lastVertLeft.position, prePoint.pos + prePoint.pos - rightPos, leftPos);
+            AddFillRect(rightPos, lastVertLeft.position, prePoint.pos + prePoint.pos - rightPos, leftPos);
         }
         else
         {
             Vector3 leftPos = startPos + thicknessOffset;
             Vector3 rightPos = startPos - thicknessOffset;
-            FillGap(prePoint.pos + prePoint.pos - leftPos, lastVertRight.position, leftPos, rightPos);
+            AddFillRect(prePoint.pos + prePoint.pos - leftPos, lastVertRight.position, leftPos, rightPos);
         }
 
         return startPos;
@@ -148,12 +146,11 @@ public class DashedLine : Image
         float disLeft = (posLeftStart - posLeftEnd).magnitude;
         float disRight = (posRightStart - posRightEnd).magnitude;
         float minDis = Mathf.Min(disLeft, disRight);
-        lastSegmentDis = minDis;
         Vector3 endPos = prePoint.pos + pointDir * minDis;
         return endPos;
     }
 
-    private void FillGap(Vector3 pos0, Vector3 pos1, Vector3 pos2, Vector3 pos3)
+    private void AddFillRect(Vector3 pos0, Vector3 pos1, Vector3 pos2, Vector3 pos3)
     {
         UIVertex vert = lastVertLeft;
         vert.position = pos0; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y;
@@ -173,25 +170,28 @@ public class DashedLine : Image
         toFill.AddTriangle(vertexCount - 4, vertexCount - 2, vertexCount - 1);
     }
 
-    private void AddRect(Vector3 start, Vector3 end, Vector3 offset, PointInfo ctrPoint)
+    private void AddValidRect(Vector3 start, Vector3 end, Vector3 offset, PointInfo ctrPoint)
     {
-        UIVertex vert = UIVertex.simpleVert;
-        vert.color = ctrPoint.color * color;
-        vert.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
-        vert.uv2.z = lineCrt.fadeRadius;
+        UIVertex vertex = UIVertex.simpleVert;
+        vertex.color = ctrPoint.color * color;
+        vertex.uv0 = new Vector4(start.x, start.y, end.x, end.y);
+        vertex.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
+        vertex.uv2.z = lineCrt.fadeRadius;
+        vertex.uv3.x = -lastSegmentLen % dashLen;
 
-        vert.position = start + offset; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y; vert.uv2.w = lineDis;
-        toFill.AddVert(vert); DebugVert("lineDis ", vert);
 
-        vert.position = start - offset; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y;
-        toFill.AddVert(vert); DebugVert("lineDis ", vert);
+        vertex.position = start + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.w = 0;
+        toFill.AddVert(vertex); DebugVert("dis start ", vertex);
 
-        lineDis += lastSegmentDis;
-        vert.position = end + offset; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y; vert.uv2.w = lineDis;
-        toFill.AddVert(vert); lastVertLeft = vert; DebugVert("lineDis ", vert);
+        vertex.position = start - offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
+        toFill.AddVert(vertex);
 
-        vert.position = end - offset; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y; 
-        toFill.AddVert(vert); lastVertRight = vert; DebugVert("lineDis ", vert);
+        lastSegmentLen = (start - end).magnitude;
+        vertex.position = end + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.w = lastSegmentLen;
+        toFill.AddVert(vertex); lastVertLeft = vertex; DebugVert("dis end ", vertex);
+
+        vertex.position = end - offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; 
+        toFill.AddVert(vertex); lastVertRight = vertex; 
 
         vertexCount += 4;
         toFill.AddTriangle(vertexCount - 4, vertexCount - 2, vertexCount - 3);
@@ -200,7 +200,7 @@ public class DashedLine : Image
 
     private void DebugVert(string tag, UIVertex vertex)
     {
-        //Debug.LogError(tag + vertex.uv2.w);
+        Debug.LogError(tag + vertex.uv2.w + " ab " + vertex.uv0.x + "," + vertex.uv0.z + " offsetA " + vertex.uv3.x);
     }
 
     private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)

@@ -285,19 +285,19 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   lines:
   - fadeRadius: 0
-    roundRadius: 10.7
-    blankStart: 24
-    blankLen: 35
+    roundRadius: 10
+    blankStart: 30
+    blankLen: 55
     points:
     - pos: {x: -100, y: -100, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 5
+      radius: 0
+    - pos: {x: 0, y: -100, z: 0}
+      color: {r: 1, g: 1, b: 1, a: 1}
+      radius: 0
     - pos: {x: 100, y: -100, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 5
-    - pos: {x: 100, y: 100, z: 0}
-      color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 5
+      radius: 0
 --- !u!222 &458632562
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -467,7 +467,7 @@ Canvas:
   m_OverrideSorting: 0
   m_OverridePixelPerfect: 0
   m_SortingBucketNormalizedSize: 0
-  m_AdditionalShaderChannelsFlag: 3
+  m_AdditionalShaderChannelsFlag: 7
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
   m_SortingOrder: 0

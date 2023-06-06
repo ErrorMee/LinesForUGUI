@@ -65,6 +65,7 @@ Shader "DashedLine"
                 float4 custom0  : TEXCOORD0;//abPos
                 float4 custom1  : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
                 float4 custom2  : TEXCOORD2;//os(xy), fadeRadius, lineDis
+                float4 custom3  : TEXCOORD3;//offsetA
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -76,6 +77,7 @@ Shader "DashedLine"
                 float4 custom0          : TEXCOORD1;
                 float4 custom1          : TEXCOORD2;
                 float4 custom2          : TEXCOORD3;
+                float offsetA : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -94,24 +96,46 @@ Shader "DashedLine"
                 OUT.custom0 = v.custom0;//abPos
                 OUT.custom1 = v.custom1;//thickness, blankStart, blankLen, roundRadius
                 OUT.custom2 = v.custom2;//os(xy), fadeRadius, lineDis
+                OUT.offsetA = v.custom3.x;
                 return OUT;
             }
 
+            float sdOrientedBox(in float2 p, in float2 a, in float2 b, float thickness)
+            {
+                float l = length(b - a);
+                float2 d = (b - a) / l;
+                float2 q = (p - (a + b) * 0.5);
+                q = mul(float2x2(d.x, -d.y, d.y, d.x), q);
+                q = abs(q) - float2(l, thickness) * 0.5;
+                return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+            }
 
             half4 frag(v2f IN) : SV_Target
             {
+                float4 abPos = IN.custom0;
+                float thickness = IN.custom1.x;
                 float blankStart = IN.custom1.y;
                 float roundRadius = IN.custom1.w;
                 float solidLen = blankStart + roundRadius * 2;
                 float blankLen = IN.custom1.z;
-                float block = solidLen + blankLen;
+                float blockLen = solidLen + blankLen;
                 float lineDis = IN.custom2.w;
+                float2 os = IN.custom2.xy;
+                float fadeRadius = IN.custom2.z;
 
 
-                float cycleLen = fmod(lineDis, block);
-                float fade = step(cycleLen, solidLen);
+                float2 a2bDir = normalize(abPos.zw - abPos.xy);
+                int blockIndex = floor(lineDis / blockLen);
+
+                float4 abPosBlock;
+                abPosBlock.xy = abPos.xy + (blockIndex * blockLen + roundRadius + IN.offsetA) * a2bDir;
+                abPosBlock.zw = abPosBlock.xy + blankStart * a2bDir;
+                float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
+
+                float sd = sdLocal;
 
                 half4 color = IN.color;
+                float fade = saturate(-sd * (1 / fadeRadius)); fade *= fade; fade *= fade;
                 color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT
