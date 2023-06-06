@@ -203,7 +203,7 @@ public class DashedLine : Image
 
     private void DebugVert(string tag, UIVertex vertex)
     {
-        Debug.LogError(tag + vertex.uv2.z + " ab " + vertex.uv0.x + "," + vertex.uv0.z + " offsetA " + vertex.uv3.x);
+        Debug.LogError(tag + vertex.uv2.z + " ab " + vertex.uv0.x + "," + vertex.uv0.z + " offsetA " + vertex.uv2.w);
     }
 
     private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)
