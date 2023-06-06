@@ -12,8 +12,8 @@ public class DashedLine : Image
     VertexHelper toFill;
     int vertexCount = 0; LineInfo lineCrt;
     UIVertex lastVertLeft; UIVertex lastVertRight;
-    float dashLen; float lastSegmentLen;
-    
+    float dashLen; float lastSegmentLen; float lastOffsetA;
+
     [SerializeField][Range(0, 128)] float fadeRadius;
     static readonly int FadeRadiusKey = Shader.PropertyToID("_FadeRadius");
 
@@ -39,7 +39,7 @@ public class DashedLine : Image
         {
             return;
         }
-        lineCrt = lineInfo; lastSegmentLen = 0;
+        lineCrt = lineInfo; lastSegmentLen = 0; lastOffsetA = 0;
         dashLen = lineCrt.blankStart + lineCrt.roundRadius * 2 + lineCrt.blankLen;
 
         for (int i = 1; i < lineCrt.points.Count; i++)
@@ -156,18 +156,18 @@ public class DashedLine : Image
 
     private void AddFillRect(Vector3 pos0, Vector3 pos1, Vector3 pos2, Vector3 pos3)
     {
-        UIVertex vert = lastVertLeft;
-        vert.position = pos0; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y;
-        toFill.AddVert(vert);
+        UIVertex vertex = lastVertLeft;
+        vertex.position = pos0; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
+        toFill.AddVert(vertex);
 
-        vert.position = pos1; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y;
-        toFill.AddVert(vert);
+        vertex.position = pos1; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
+        toFill.AddVert(vertex);
 
-        vert.position = pos2; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y;
-        toFill.AddVert(vert);
+        vertex.position = pos2; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
+        toFill.AddVert(vertex);
 
-        vert.position = pos3; vert.uv2.x = vert.position.x; vert.uv2.y = vert.position.y;
-        toFill.AddVert(vert);
+        vertex.position = pos3; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
+        toFill.AddVert(vertex); 
 
         vertexCount += 4;
         toFill.AddTriangle(vertexCount - 4, vertexCount - 3, vertexCount - 2);
@@ -180,18 +180,18 @@ public class DashedLine : Image
         vertex.color = ctrPoint.color * color;
         vertex.uv0 = new Vector4(start.x, start.y, end.x, end.y);
         vertex.uv1 = new Vector4(ctrPoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
-        vertex.uv2.w = -lastSegmentLen % dashLen;
-
+        vertex.uv2.w = (-lastSegmentLen + lastOffsetA) % dashLen;
+        lastOffsetA = vertex.uv2.w;
 
         vertex.position = start + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.z = 0;
-        toFill.AddVert(vertex); DebugVert("dis start ", vertex);
+        toFill.AddVert(vertex); 
 
         vertex.position = start - offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y;
         toFill.AddVert(vertex);
 
         lastSegmentLen = (start - end).magnitude;
         vertex.position = end + offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.z = lastSegmentLen;
-        toFill.AddVert(vertex); lastVertLeft = vertex; DebugVert("dis end ", vertex);
+        toFill.AddVert(vertex); lastVertLeft = vertex; 
 
         vertex.position = end - offset; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; 
         toFill.AddVert(vertex); lastVertRight = vertex; 
@@ -199,11 +199,6 @@ public class DashedLine : Image
         vertexCount += 4;
         toFill.AddTriangle(vertexCount - 4, vertexCount - 2, vertexCount - 3);
         toFill.AddTriangle(vertexCount - 2, vertexCount - 1, vertexCount - 3);
-    }
-
-    private void DebugVert(string tag, UIVertex vertex)
-    {
-        Debug.LogError(tag + vertex.uv2.z + " ab " + vertex.uv0.x + "," + vertex.uv0.z + " offsetA " + vertex.uv2.w);
     }
 
     private Vector3 PointDir(Vector3 fromPos, Vector3 toPos)
@@ -214,24 +209,6 @@ public class DashedLine : Image
             pointDir = Vector3.right;
         }
         return pointDir;
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.color = Color.black;
-        for (int i = 0; i < lines.Count; i++)
-        {
-            LineInfo lineInfo = lines[i];
-            for (int j = 0; j < lineInfo.points.Count; j++)
-            {
-                PointInfo pointInfo = lineInfo.points[j];
-                Gizmos.DrawSphere(pointInfo.pos + transform.position, 2);
-                if (j > 0)
-                {
-                    Gizmos.DrawLine(lineInfo.points[j - 1].pos + transform.position, pointInfo.pos + transform.position);
-                }
-            }
-        }
     }
 }
 

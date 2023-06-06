@@ -98,6 +98,8 @@ Shader "DashedLine"
                 return OUT;
             }
 
+            float opIntersection(float d1, float d2) { return max(d1, d2); }
+
             float sdOrientedBox(in float2 p, in float2 a, in float2 b, float thickness)
             {
                 float l = length(b - a);
@@ -116,20 +118,26 @@ Shader "DashedLine"
                 float roundRadius = IN.custom1.w;
                 float solidLen = blankStart + roundRadius * 2;
                 float blankLen = IN.custom1.z;
-                float blockLen = solidLen + blankLen;
+                float localLen = solidLen + blankLen;
                 float lineDis = IN.custom2.z;
                 float2 os = IN.custom2.xy;
 
 
                 float2 a2bDir = normalize(abPos.zw - abPos.xy);
-                int blockIndex = floor(lineDis / blockLen);
+                int localIndex = floor((lineDis - IN.custom2.w) / localLen);
 
-                float4 abPosBlock;
-                abPosBlock.xy = abPos.xy + (blockIndex * blockLen + roundRadius + IN.custom2.w) * a2bDir;
-                abPosBlock.zw = abPosBlock.xy + blankStart * a2bDir;
-                float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
+                float4 abPosLocal;
+                abPosLocal.xy = abPos.xy + (localIndex * localLen + roundRadius + IN.custom2.w) * a2bDir;
+                abPosLocal.zw = abPosLocal.xy + blankStart * a2bDir;
+                float sdLocal = sdOrientedBox(os, abPosLocal.xw, abPosLocal.zy, thickness) - roundRadius;
+                sdLocal -= step(min(blankStart, blankLen), 0) * 1024;
 
-                float sd = sdLocal;
+                float4 abPosGlobal;
+                abPosGlobal.xy = abPos.xy + roundRadius * a2bDir;
+                abPosGlobal.zw = abPos.zw - roundRadius * a2bDir;
+                float sdGlobal = sdOrientedBox(os, abPosGlobal.xw, abPosGlobal.zy, thickness) - roundRadius;
+
+                float sd = opIntersection(sdLocal, sdGlobal);
 
                 half4 color = IN.color;
                 float fade = saturate(-sd * (1.0 / _FadeRadius)); fade *= fade; fade *= fade;
