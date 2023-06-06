@@ -97,35 +97,22 @@ Shader "DashedLine"
                 return OUT;
             }
 
-            float opUnion(float d1, float d2) { return min(d1, d2); }
-            float opSubtraction(float d1, float d2) { return max(-d1, d2); }
-            float opIntersection(float d1, float d2) { return max(d1, d2); }
-
-            float sdCircle(float2 p, float r)
-            {
-                return length(p) - r;
-            }
-
-            float sdSegment(in float2 p, in float2 a, in float2 b, float round = 0)
-            {
-                float2 pa = p - a, ba = b - a;
-                float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-                return length(pa - ba * h) - round;
-            }
-
-            float sdOrientedBox(in float2 p, in float2 a, in float2 b, float thickness)
-            {
-                float l = length(b - a);
-                float2 d = (b - a) / l;
-                float2 q = (p - (a + b) * 0.5);
-                q = mul(float2x2(d.x, -d.y, d.y, d.x), q);
-                q = abs(q) - float2(l, thickness) * 0.5;
-                return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
-            }
 
             half4 frag(v2f IN) : SV_Target
             {
+                float blankStart = IN.custom1.y;
+                float roundRadius = IN.custom1.w;
+                float solidLen = blankStart + roundRadius * 2;
+                float blankLen = IN.custom1.z;
+                float block = solidLen + blankLen;
+                float lineDis = IN.custom2.w;
+
+
+                float cycleLen = fmod(lineDis, block);
+                float fade = step(cycleLen, solidLen);
+
                 half4 color = IN.color;
+                color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT
                 color.a *= UnityGet2DClipping(IN.worldPosition.xy, _ClipRect);
