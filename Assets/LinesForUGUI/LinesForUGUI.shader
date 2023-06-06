@@ -1,12 +1,13 @@
 // Unity built-in shader source. Copyright (c) 2016 Unity Technologies. MIT license (see license.txt)
 
-Shader "LinesForUGUI"
+Shader "DashedLine"
 {
     Properties
     {
         [PerRendererData] _MainTex("Sprite Texture", 2D) = "white" {}
-
-        _StencilComp("Stencil Comparison", Float) = 8
+        _FadeRadius("AA FadeRadius", Range(0, 128)) = 8
+        _OnionRadius("OnionRadius", Range(0, 128)) = 0
+        _StencilComp("Stencil Comparison", Float) = 1
         _Stencil("Stencil ID", Float) = 0
         _StencilOp("Stencil Operation", Float) = 0
         _StencilWriteMask("Stencil Write Mask", Float) = 255
@@ -62,25 +63,27 @@ Shader "LinesForUGUI"
             {
                 float4 vertex   : POSITION;
                 float4 color    : COLOR;
-                float4 custom0 : TEXCOORD0;//abPos
-                float4 custom1 : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
-                float4 custom2 : TEXCOORD2;//os(xy), fadeRadius, lineDis
+                float4 custom0  : TEXCOORD0;//abPos
+                float4 custom1  : TEXCOORD1;//thickness, blankStart, blankLen, roundRadius
+                float4 custom2  : TEXCOORD2;//os(xy), lineDis, offsetA
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
             struct v2f
             {
-                float4 vertex   : SV_POSITION;
-                float4 color : COLOR;
-                float4 worldPosition : TEXCOORD0;
-                float4 custom0  : TEXCOORD1;
-                float4 custom1 : TEXCOORD2;
-                float4 custom2 : TEXCOORD3;
+                float4 vertex           : SV_POSITION;
+                float4 color            : COLOR;
+                float4 worldPosition    : TEXCOORD0;
+                float4 custom0          : TEXCOORD1;
+                float4 custom1          : TEXCOORD2;
+                float4 custom2          : TEXCOORD3;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
             sampler2D _MainTex;
             float4 _ClipRect;
+            float _FadeRadius;
+            float _OnionRadius;
 
             v2f vert(appdata_t v)
             {
@@ -93,24 +96,22 @@ Shader "LinesForUGUI"
 
                 OUT.custom0 = v.custom0;//abPos
                 OUT.custom1 = v.custom1;//thickness, blankStart, blankLen, roundRadius
-                OUT.custom2 = v.custom2;//os(xy), fadeRadius, lineDis
+                OUT.custom2 = v.custom2;//os(xy), lineDis, offsetA
                 return OUT;
             }
 
-            float opUnion(float d1, float d2) { return min(d1, d2); }
-            float opSubtraction(float d1, float d2) { return max(-d1, d2); }
             float opIntersection(float d1, float d2) { return max(d1, d2); }
 
-            float sdCircle(float2 p, float r)
+            float opOnion( in float sdf, in float thickness )
             {
-                return length(p) - r;
+                return abs(sdf)-thickness;
             }
 
-            float sdSegment(in float2 p, in float2 a, in float2 b, float round = 0)
+            float sdSegment(in float2 p, in float2 a, in float2 b )
             {
-                float2 pa = p - a, ba = b - a;
-                float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
-                return length(pa - ba * h) - round;
+                float2 pa = p-a, ba = b-a;
+                float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
+                return length( pa - ba * h );
             }
 
             float sdOrientedBox(in float2 p, in float2 a, in float2 b, float thickness)
@@ -127,31 +128,35 @@ Shader "LinesForUGUI"
             {
                 float4 abPos = IN.custom0;
                 float thickness = IN.custom1.x;
+                float blankStart = IN.custom1.y;
                 float roundRadius = IN.custom1.w;
+                float solidLen = blankStart + roundRadius * 2;
+                float blankLen = IN.custom1.z;
+                float localLen = solidLen + blankLen;
+                float lineDis = IN.custom2.z;
                 float2 os = IN.custom2.xy;
-                float fadeRadius = IN.custom2.z;
 
-                float sdGlobal = sdOrientedBox(os, abPos.xw, abPos.zy, thickness) - roundRadius;
 
                 float2 a2bDir = normalize(abPos.zw - abPos.xy);
-                float solidLen = IN.custom1.y; float blankLen = IN.custom1.z;
-                float blockLen = solidLen + blankLen;
-                float lineDis = IN.custom2.w;
-                int blockIndex = floor(lineDis / blockLen);
-                //return float4(blockIndex * 0.3, 0, 0, 1);
+                int localIndex = floor((lineDis - IN.custom2.w) / localLen);
 
-                float4 abPosBlock;
-                abPosBlock.xy = abPos.xy + blockIndex * blockLen * a2bDir;
-                abPosBlock.zw = abPosBlock.xy + (solidLen - roundRadius * 2) * a2bDir;
-                float sdLocal = sdOrientedBox(os, abPosBlock.xw, abPosBlock.zy, thickness) - roundRadius;
+                float4 abPosLocal;
+                abPosLocal.xy = abPos.xy + (localIndex * localLen + roundRadius + IN.custom2.w) * a2bDir;
+                abPosLocal.zw = abPosLocal.xy + blankStart * a2bDir;
+                float sdLocal = sdOrientedBox(os, abPosLocal.xw, abPosLocal.zy, thickness) - roundRadius;
+                sdLocal -= step(min(blankStart, blankLen), 0) * 1024;
 
-                sdLocal -= step(min(solidLen, blankLen), 0) * 1024;
+                float sd = sdLocal;
 
-                float sd = opIntersection(sdLocal, sdGlobal);
-    
+                float halfThickness = thickness * 0.5;
+                float sdGlobal = sdSegment(os, abPos.xy, abPos.zw + a2bDir * (halfThickness + _FadeRadius)) - (halfThickness + roundRadius);
+                sd = opIntersection(sd, sdGlobal);
+
+                float isOnion = step(_FadeRadius * 0.5, _OnionRadius);
+                sd = (1 - isOnion) * sd + isOnion * opOnion(sd + _OnionRadius, _OnionRadius);
+                
                 half4 color = IN.color;
-                float fade = saturate(-sd * (1 / fadeRadius));
-                fade *= fade; fade *= fade;
+                float fade = saturate(-sd * (1.0 / _FadeRadius)); fade *= fade; fade *= fade;
                 color.a *= fade;
                    
                 #ifdef UNITY_UI_CLIP_RECT

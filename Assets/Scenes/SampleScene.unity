@@ -285,18 +285,18 @@ MonoBehaviour:
   m_PixelsPerUnitMultiplier: 1
   lines:
   - roundRadius: 10
-    blankStart: 30
-    blankLen: 0
+    blankStart: 40
+    blankLen: 20
     points:
-    - pos: {x: -100, y: -100, z: 0}
+    - pos: {x: -100, y: 0, z: 0}
+      color: {r: 1, g: 1, b: 1, a: 1}
+      radius: 30
+    - pos: {x: 0, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
       radius: 10
-    - pos: {x: 0, y: -100, z: 0}
+    - pos: {x: 100, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 10
-    - pos: {x: 100, y: -90.5, z: 0}
-      color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 10
+      radius: 30
   fadeRadius: 5
 --- !u!222 &458632562
 CanvasRenderer:
