@@ -284,19 +284,19 @@ MonoBehaviour:
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
   lines:
-  - roundRadius: 20
-    blankStart: 18.3
+  - roundRadius: 10
+    blankStart: 0
     blankLen: 40
     points:
     - pos: {x: -100, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 5
+      radius: 30
     - pos: {x: 0, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 5
+      radius: 20
     - pos: {x: 100, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 5
+      radius: 10
   fadeRadius: 5
 --- !u!222 &458632562
 CanvasRenderer:

@@ -31,7 +31,7 @@ Material:
     m_Floats:
     - _ColorMask: 15
     - _FadeRadius: 5
-    - _OnionRadius: 0
+    - _OnionRadius: 5.9
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0

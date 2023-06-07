@@ -97,7 +97,6 @@ Shader "DashedLine"
                 
                 OUT.custom0 = v.custom0;//abPos
 
-                //15 0128.999
                 float lackStart = floor(v.custom1.x * 0.0001);
                 float thickness = v.custom1.x - lackStart * 10000;
 
