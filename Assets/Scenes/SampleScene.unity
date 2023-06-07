@@ -227,7 +227,7 @@ GameObject:
   - component: {fileID: 458632562}
   - component: {fileID: 458632561}
   m_Layer: 5
-  m_Name: DashedLine
+  m_Name: LinesForUGUI
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -250,7 +250,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: 50}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 50}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &458632561
@@ -284,19 +284,19 @@ MonoBehaviour:
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
   lines:
-  - roundRadius: 10
-    blankStart: 40
-    blankLen: 20
+  - roundRadius: 20
+    blankStart: 18.3
+    blankLen: 40
     points:
     - pos: {x: -100, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 30
+      radius: 5
     - pos: {x: 0, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 10
+      radius: 5
     - pos: {x: 100, y: 0, z: 0}
       color: {r: 1, g: 1, b: 1, a: 1}
-      radius: 30
+      radius: 5
   fadeRadius: 5
 --- !u!222 &458632562
 CanvasRenderer:

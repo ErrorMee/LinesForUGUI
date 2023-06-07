@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Collections.Generic;
+using System;
 
 public class LinesForUGUI : Image
 {
@@ -13,6 +14,8 @@ public class LinesForUGUI : Image
     int vertexCount = 0; LineInfo lineCrt;
     UIVertex lastVertLeft; UIVertex lastVertRight;
     float dashLen; float lastSegmentLen; float lastOffsetA;
+    float solidLen = 0;
+    int lackStart; int lackEnd = 0;
 
     [SerializeField][Range(0, 128)] float fadeRadius;
     static readonly int FadeRadiusKey = Shader.PropertyToID("_FadeRadius");
@@ -35,12 +38,21 @@ public class LinesForUGUI : Image
 
     private void Draw(LineInfo lineInfo)
     {
-        if (lineInfo.points.Count < 2)
+        if (lineInfo.points.Count < 1)
         {
             return;
         }
-        lineCrt = lineInfo; lastSegmentLen = 0; lastOffsetA = 0;
-        dashLen = lineCrt.blankStart + lineCrt.roundRadius * 2 + lineCrt.blankLen;
+        lineCrt = lineInfo; lastSegmentLen = 0; lastOffsetA = 0; solidLen = lineCrt.blankStart;
+        dashLen = solidLen + lineCrt.roundRadius * 2 + lineCrt.blankLen;
+        
+        if (lineInfo.points.Count == 1)
+        {
+            solidLen = 0.01f;
+            PointInfo ctrPoint = lineCrt.points[0];
+            Vector3 hOffset = Vector3.left * lineCrt.roundRadius;
+            Vector3 VOffset = Vector3.up * (ctrPoint.radius + lineCrt.roundRadius);
+            AddValidRect(ctrPoint.pos + hOffset, ctrPoint.pos - hOffset,  VOffset, VOffset, ctrPoint, ctrPoint);
+        }
 
         for (int i = 1; i < lineCrt.points.Count; i++)
         {
@@ -55,7 +67,7 @@ public class LinesForUGUI : Image
         Vector3 pointDir = PointDir(prePoint.pos, ctrPoint.pos);
         Vector3 thicknessDir = new(-pointDir.y, pointDir.x, 0);
         Vector3 thicknessOffset = thicknessDir * (ctrPoint.radius + lineCrt.roundRadius);
-
+        lackStart = lackEnd = 0;
         if (index == 1)
         {
             if (lineCrt.points.Count > 2)
@@ -110,7 +122,9 @@ public class LinesForUGUI : Image
         float disLeft = (posLeftStart - posLeftEnd).magnitude;
         float disRight = (posRightStart - posRightEnd).magnitude;
 
-        Vector3 startPos = ctrPoint.pos - pointDir * Mathf.Min(disLeft, disRight);
+        float minDis = Mathf.Min(disLeft, disRight);
+        lackStart = Mathf.RoundToInt(Mathf.Abs(disLeft - disRight) + lineCrt.roundRadius);
+        Vector3 startPos = ctrPoint.pos - pointDir * minDis;
 
         if (disLeft > disRight)
         {
@@ -152,6 +166,7 @@ public class LinesForUGUI : Image
         float disLeft = (posLeftStart - posLeftEnd).magnitude;
         float disRight = (posRightStart - posRightEnd).magnitude;
         float minDis = Mathf.Min(disLeft, disRight);
+        lackEnd = Mathf.RoundToInt(Mathf.Abs(disLeft - disRight) + lineCrt.roundRadius);
         Vector3 endPos = prePoint.pos + pointDir * minDis;
         return endPos;
     }
@@ -181,7 +196,7 @@ public class LinesForUGUI : Image
         UIVertex vertex = UIVertex.simpleVert;
         vertex.color = prePoint.color * color;
         vertex.uv0 = new Vector4(start.x, start.y, end.x, end.y);
-        vertex.uv1 = new Vector4(prePoint.radius * 2, lineCrt.blankStart, lineCrt.blankLen, lineCrt.roundRadius);
+        vertex.uv1 = new Vector4(prePoint.radius * 2 + lackStart * 10000, solidLen + lackEnd * 1000, lineCrt.blankLen, lineCrt.roundRadius);
         vertex.uv2.w = (-lastSegmentLen + lastOffsetA) % dashLen;
         lastOffsetA = vertex.uv2.w;
 
@@ -192,7 +207,7 @@ public class LinesForUGUI : Image
         toFill.AddVert(vertex);
 
         vertex.color = ctrPoint.color * color;
-        vertex.uv1.x = ctrPoint.radius * 2;
+        vertex.uv1.x = ctrPoint.radius * 2 + lackStart * 10000;
         lastSegmentLen = (start - end).magnitude;
         vertex.position = end + offsetEnd; vertex.uv2.x = vertex.position.x; vertex.uv2.y = vertex.position.y; vertex.uv2.z = lastSegmentLen;
         toFill.AddVert(vertex); lastVertLeft = vertex; 

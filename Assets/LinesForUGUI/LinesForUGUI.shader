@@ -90,13 +90,28 @@ Shader "DashedLine"
                 v2f OUT;
                 UNITY_SETUP_INSTANCE_ID(v);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(OUT);
-                OUT.worldPosition = v.vertex;
-                OUT.vertex = UnityObjectToClipPos(OUT.worldPosition);
+                
+                OUT.vertex = UnityObjectToClipPos(v.vertex);
                 OUT.color = v.color;
-
+                OUT.worldPosition = v.vertex;
+                
                 OUT.custom0 = v.custom0;//abPos
-                OUT.custom1 = v.custom1;//thickness, blankStart, blankLen, roundRadius
+
+                //15 0128.999
+                float lackStart = floor(v.custom1.x * 0.0001);
+                float thickness = v.custom1.x - lackStart * 10000;
+
+                float lackEnd = floor(v.custom1.y * 0.001);
+                float blankStart = v.custom1.y - lackEnd * 1000;
+                
+                //thickness, blankStart, blankLen, roundRadius
+                OUT.custom1.x = thickness; OUT.custom1.y = blankStart;
+                OUT.custom1.z = v.custom1.z; OUT.custom1.w = v.custom1.w;
+
                 OUT.custom2 = v.custom2;//os(xy), lineDis, offsetA
+                
+                OUT.worldPosition.z = lackStart; OUT.worldPosition.w = lackEnd;
+                
                 return OUT;
             }
 
@@ -105,13 +120,6 @@ Shader "DashedLine"
             float opOnion( in float sdf, in float thickness )
             {
                 return abs(sdf)-thickness;
-            }
-
-            float sdSegment(in float2 p, in float2 a, in float2 b )
-            {
-                float2 pa = p-a, ba = b-a;
-                float h = clamp( dot(pa,ba)/dot(ba,ba), 0.0, 1.0 );
-                return length( pa - ba * h );
             }
 
             float sdOrientedBox(in float2 p, in float2 a, in float2 b, float thickness)
@@ -148,8 +156,11 @@ Shader "DashedLine"
 
                 float sd = sdLocal;
 
-                float halfThickness = thickness * 0.5;
-                float sdGlobal = sdSegment(os, abPos.xy, abPos.zw + a2bDir * (halfThickness + _FadeRadius)) - (halfThickness + roundRadius);
+                half4 globalAB; 
+                globalAB.xy = abPos.xy + (roundRadius - IN.worldPosition.z) * a2bDir;
+                globalAB.zw = abPos.zw - (roundRadius - IN.worldPosition.w) * a2bDir;
+                float sdGlobal = sdOrientedBox(os, globalAB.xw, globalAB.zy, thickness) - roundRadius;
+
                 sd = opIntersection(sd, sdGlobal);
 
                 float isOnion = step(_FadeRadius * 0.5, _OnionRadius);
